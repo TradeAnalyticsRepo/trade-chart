@@ -14,6 +14,12 @@ export interface TradeData {
   net_amt: string;
   /** 종가 (원 단위) */
   close_price: string;
+  /** 시가 (원 단위) */
+  open_price: string;
+  /** 고가 (원 단위) */
+  high_price: string;
+  /** 저가 (원 단위) */
+  low_price: string;
 }
 
 /**
@@ -22,10 +28,10 @@ export interface TradeData {
 export interface ChartSeries {
   /** 시리즈 이름 */
   name: string;
-  /** 차트 타입 (line, bar 등) */
+  /** 차트 타입 (line, bar, candlestick 등) */
   type: string;
-  /** 데이터 배열 */
-  data: number[];
+  /** 데이터 배열 (일반 데이터 또는 OHLC 데이터) */
+  data: number[] | number[][];
   /** Y축 인덱스 */
   yAxisIndex?: number;
   /** 부드러운 곡선 사용 여부 */
@@ -42,7 +48,10 @@ export interface ChartSeries {
   };
   /** 아이템 스타일 */
   itemStyle?: {
-    color: (params: any) => string;
+    color?: string | ((params: any) => string);
+    color0?: string;
+    borderColor?: string;
+    borderColor0?: string;
   };
   /** 투명도 */
   opacity?: number;
