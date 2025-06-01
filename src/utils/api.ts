@@ -1,6 +1,23 @@
+import axios from 'axios';
 import { ApiResponse, TradeData } from '@/types/trade';
 import { generateDates, generateMockData } from './mockData';
 
+// const BASE_URL = '/api/trade';
+
+export const getApi = async () => {
+  const res = await axios.get('/api/trade', {
+    params: {
+      FID_COND_MRKT_DIV_CODE: 'J',
+      FID_INPUT_ISCD: '005930', // 삼성전자
+      FID_INPUT_DATE_1: '20250101',
+      FID_INPUT_DATE_2: '20250501',
+      FID_PERIOD_DIV_CODE: 'D',
+      FID_ORG_ADJ_PRC: '1'
+    },
+  });
+
+  console.log('📈 차트 데이터:', res.data);
+};
 /**
  * API 응답 데이터를 TradeData 형식으로 변환
  * @param response - API 응답 데이터

@@ -4,7 +4,7 @@ import ReactECharts from 'echarts-for-react';
 import { useEffect, useState } from 'react';
 import styled from '@emotion/styled';
 import { TradeData } from '@/types/trade';
-import { fetchTradeData } from '@/utils/api';
+import { fetchTradeData, getApi } from '@/utils/api';
 import { createChartOption, createChartSeries } from '@/utils/chartUtils';
 
 const ChartContainer = styled.div`
@@ -134,6 +134,9 @@ export default function ChartPage() {
         const formattedEndDate = endDate.toISOString().slice(0, 10).replace(/-/g, '');
 
         const tradeData = await fetchTradeData(formattedStartDate, formattedEndDate);
+        
+
+        getApi();
         setData(tradeData);
       } catch (err) {
         setError(err instanceof Error ? err.message : '데이터를 불러오는 중 오류가 발생했습니다.');
