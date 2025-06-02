@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: '종가별 분석',
+  title: '종목별 종가 집계',
 };
 
 export default function RootLayout({
