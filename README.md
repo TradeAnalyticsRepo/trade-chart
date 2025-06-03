@@ -17,3 +17,9 @@ const res = await fetch("https://openapi.koreainvestment.com:9443/oauth2/tokenP"
     });
 
 ```
+
+---
+
+# 2025.06.03
+
+Token 발급 api는 1일 1번 제한하도록 수정이 필요함. 

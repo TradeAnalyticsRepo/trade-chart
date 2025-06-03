@@ -42,7 +42,7 @@ export async function GET(req: NextRequest) {
             }
         });
 
-        console.log('Get result =>', result.data);
+        // console.log('Get result =>', result.data);
         return NextResponse.json(result.data);
     } catch (error: any) {
         console.error("[GET ERROR]", error);
