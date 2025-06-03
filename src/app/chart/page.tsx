@@ -6,7 +6,6 @@ import styled from '@emotion/styled';
 import { TradeData } from '@/types/trade';
 import { fetchTradeData, getApi } from '@/utils/api';
 import { createChartOption, createChartSeries } from '@/utils/chartUtils';
-import { getToken } from '@/lib/tokenManager';
 import { log } from 'console';
 
 const ChartContainer = styled.div`
