@@ -7,7 +7,7 @@ export interface InquireDailyItemChartPriceParams {
   FID_ORG_ADJ_PRC: '0' | '1';              // 수정주가 여부: '0' (수정주가), '1' (원주가)
 }
 
-interface InquireDailyItemChartPriceResponse {
+export interface InquireDailyItemChartPriceResponse {
   rt_cd: string;      // 응답 코드 ('0'이면 성공)
   msg_cd: string;     // 메시지 코드
   msg1: string;       // 메시지 내용
@@ -42,7 +42,7 @@ interface InquireDailyItemChartPriceResponse {
     eps: string;               // EPS (주당순이익)
     pbr: string;               // PBR (주가순자산비율)
     itewhol_loan_rmnd_ratem: string; // 융자 잔고 비율
-  };
+  } | null;
   output2: {
     stck_bsop_date: string;    // 주식 영업일자 (YYYYMMDD)
     stck_clpr: string;         // 종가
@@ -57,6 +57,6 @@ interface InquireDailyItemChartPriceResponse {
     prdy_vrss_sign: string;    // 전일 대비 부호
     prdy_vrss: string;         // 전일 대비
     revl_issu_reas: string;    // 재평가 사유 코드
-  }
+  } | null;
 }
 

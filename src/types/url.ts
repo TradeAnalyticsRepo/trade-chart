@@ -2,7 +2,7 @@ import { AxiosHeaders } from "axios";
 
 export const BASE_URL = 'https://openapi.koreainvestment.com:9443';
 
-export enum URL {
+export enum KIS_URL {
     국내기관_외국인_매매종목가집계 = '/uapi/domestic-stock/v1/quotations/foreign-institution-total',
     국내주식기간별시세 = '/uapi/domestic-stock/v1/quotations/inquire-daily-itemchartprice'
 }

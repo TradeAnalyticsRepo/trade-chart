@@ -7,10 +7,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getToken } from '@/lib/tokenManager';
 import axios from 'axios';
-import { KisRequestHeaders } from '@/types/url';
-import { InquireDailyItemChartPriceParams } from '@/types/국내주식기간별시세';
+import { BASE_URL, KIS_URL, KisRequestHeaders } from '@/types/url';
+import { InquireDailyItemChartPriceParams, InquireDailyItemChartPriceResponse } from '@/types/국내주식기간별시세';
 
-export async function GET(req: NextRequest) {
+export async function GET(req: NextRequest): Promise<NextResponse<InquireDailyItemChartPriceResponse>> {
     try {
         const { tokenType, token } = await getToken();
         const { searchParams } = new URL(req.url);
@@ -24,8 +24,9 @@ export async function GET(req: NextRequest) {
             FID_ORG_ADJ_PRC: searchParams.get('FID_ORG_ADJ_PRC') ?? '0',
         } as InquireDailyItemChartPriceParams
         
+        console.log(`URL : ${BASE_URL}${KIS_URL.국내주식기간별시세}`)
         const result = await axios.get(
-            'https://openapi.koreainvestment.com:9443/uapi/domestic-stock/v1/quotations/inquire-daily-itemchartprice'
+            `${BASE_URL}${KIS_URL.국내주식기간별시세}`
             , {
             headers: {
                 Authorization: `${tokenType} ${token}`,
@@ -38,10 +39,17 @@ export async function GET(req: NextRequest) {
             params
         });
 
-        console.log('Get result =>', result.data);
+        // console.log('Get result =>', result.data);
         return NextResponse.json(result.data);
     } catch (error: any) {
         console.error("[GET ERROR]", error);
-        return NextResponse.json({ error: "GET 요청 실패", message: error.message }, { status: 500 });
+        // return NextResponse.json({ error: "GET 요청 실패", message: error.message }, { status: 500 });
+        return NextResponse.json({
+            rt_cd: '999',
+            msg_cd: '999',
+            msg1: 'GET 요청 실패',
+            output: null,
+            output2: null
+        }, { status: 500 });
     }
 }
