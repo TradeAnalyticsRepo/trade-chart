@@ -11,7 +11,6 @@ import axios from 'axios';
 export async function GET(req: NextRequest) {
     try {
         const { tokenType, token } = await getToken();
-
         const { searchParams } = new URL(req.url);
 
         const FID_COND_MRKT_DIV_CODE = searchParams.get('FID_COND_MRKT_DIV_CODE');
@@ -45,38 +44,8 @@ export async function GET(req: NextRequest) {
 
         console.log('Get result =>', result.data);
         return NextResponse.json(result.data);
-        
     } catch (error: any) {
         console.error("[GET ERROR]", error);
         return NextResponse.json({ error: "GET 요청 실패", message: error.message }, { status: 500 });
     }
 }
-
-// export async function POST(req: NextRequest, { params }: {params: {action: string}}) {
-//     try {
-//         const { action } = params;
-//         const { tokenType, token } = await getToken();
-
-//         switch(action) {
-//             case: '',
-//             default:
-//                 return NextResponse.json({ error: 'Invalid action' }, { status: 404 });
-//         }
-
-//         const result = await axios.post(url, 
-//             data, 
-//             {
-//                 headers: {
-//                     Authorization: `${tokenType} ${token}`,
-//                     "Content-Type": contentType,
-//                 }
-//             }
-//         );
-
-//         console.log('Post result =>', result);
-//         return NextResponse.json(result);
-//     } catch (error: any) {
-//         console.error("[POST ERROR]", error);
-//         return NextResponse.json({ error: "POST 요청 실패", message: error.message }, { status: 500 });
-//     }
-// }
