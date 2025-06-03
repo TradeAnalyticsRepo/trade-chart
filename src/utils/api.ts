@@ -3,9 +3,6 @@ import { ApiResponse, TradeData } from '@/types/trade';
 import { generateDates, generateMockData } from './mockData';
 
 // const BASE_URL = '/api/trade';
-
-
-
 export const getApi = async () => {
   const res = await axios.get('/api/trade', {
     params: {

@@ -42,8 +42,8 @@ export async function GET(req: NextRequest) {
             }
         });
 
-        // console.log('Get result =>', result.data);
-        return NextResponse.json(result.data);
+        console.log('Get result =>', result.data);
+        return NextResponse.json(result);
     } catch (error: any) {
         console.error("[GET ERROR]", error);
         return NextResponse.json({ error: "GET 요청 실패", message: error.message }, { status: 500 });
