@@ -20,7 +20,6 @@ export async function GET(req: NextRequest) {
         const FID_PERIOD_DIV_CODE = searchParams.get('FID_PERIOD_DIV_CODE') ?? 'D'; // 일봉 등
         const FID_ORG_ADJ_PRC = searchParams.get('FID_ORG_ADJ_PRC') ?? '0'; // 수정주가 여부
         
-
         const result = await axios.get(
             'https://openapi.koreainvestment.com:9443/uapi/domestic-stock/v1/quotations/inquire-daily-itemchartprice'
             , {
@@ -43,7 +42,7 @@ export async function GET(req: NextRequest) {
         });
 
         console.log('Get result =>', result.data);
-        return NextResponse.json(result);
+        return NextResponse.json(result.data);
     } catch (error: any) {
         console.error("[GET ERROR]", error);
         return NextResponse.json({ error: "GET 요청 실패", message: error.message }, { status: 500 });

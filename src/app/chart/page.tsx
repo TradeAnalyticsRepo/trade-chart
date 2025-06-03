@@ -137,8 +137,6 @@ export default function ChartPage() {
 
         const tradeData = await fetchTradeData(formattedStartDate, formattedEndDate);
 
-       
-
         getApi();
         setData(tradeData);
       } catch (err) {
