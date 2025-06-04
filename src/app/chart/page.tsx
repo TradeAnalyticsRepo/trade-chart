@@ -178,6 +178,10 @@ export default function ChartPage() {
               color: (params: any) => (netAmounts[params.dataIndex] >= 0 ? '#ff4d4f' : '#52c41a'),
             },
             opacity: 0.6,
+            showSymbol: false,
+            label: {
+              show: false
+            }
           },
         ]
       : [
@@ -219,15 +223,26 @@ export default function ChartPage() {
         top: '15%',
         containLabel: true,
       },
+      legend: {
+        show: !showVolume,
+        data: series.map((s) => s.name),
+        top: 30,
+        textStyle: {
+          color: 'var(--foreground)',
+        },
+        selected: {
+          '순매수': false,
+        }
+      },
       dataZoom: [
         {
           type: 'inside',
-          start: 0,
+          start: 50,
           end: 100,
         },
         {
           type: 'slider',
-          start: 0,
+          start: 50,
           end: 100,
           bottom: showVolume ? 0 : '10%',
           height: 20,

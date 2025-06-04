@@ -55,6 +55,8 @@ export interface ChartSeries {
   };
   /** 투명도 */
   opacity?: number;
+  /** 기본 선택 여부 */
+  selected?: boolean;
 }
 
 /**
