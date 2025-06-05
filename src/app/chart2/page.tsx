@@ -123,7 +123,7 @@ export default function ChartPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchData = async () => {
+    const getMockData = async () => {
       setIsLoading(true);
       setError(null);
       try {
@@ -136,7 +136,6 @@ export default function ChartPage() {
 
         const tradeData = await fetchTradeData(formattedStartDate, formattedEndDate);
 
-        getApi();
         setData(tradeData);
       } catch (err) {
         setError(err instanceof Error ? err.message : '데이터를 불러오는 중 오류가 발생했습니다.');
@@ -146,7 +145,9 @@ export default function ChartPage() {
       }
     };
 
-    fetchData();
+    getMockData();
+    getApi();
+
   }, []);
 
   const getChartOption = (investor: string, showVolume: boolean = false) => {
@@ -448,6 +449,8 @@ export default function ChartPage() {
             </ControlButton>
           ))}
         </ChartControls>
+
+        
         <InvestorChartContainer>
           <ChartLabel>
             <ChartIndicator color='#1890ff' />

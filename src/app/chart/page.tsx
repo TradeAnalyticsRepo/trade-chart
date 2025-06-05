@@ -6,7 +6,11 @@ import styled from '@emotion/styled';
 import { TradeData } from '@/types/trade';
 import { fetchTradeData, getApi } from '@/utils/api';
 import { createChartOption, createChartSeries } from '@/utils/chartUtils';
-import { log } from 'console';
+
+
+const ToggleButton = styled.button`
+  width: 80px;
+`
 
 const ChartContainer = styled.div`
   width: 100%;
@@ -41,35 +45,9 @@ const ChartTitle = styled.h1`
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
 `;
 
-const ChartControls = styled.div`
-  display: flex;
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-  padding: 0 1rem;
-  justify-content: center;
-`;
-
-const ControlButton = styled.button`
-  padding: 0.7rem 1.5rem;
-  border: 1px solid var(--foreground);
-  border-radius: 8px;
-  background: transparent;
-  color: var(--foreground);
-  cursor: pointer;
-  font-size: 1rem;
-  font-weight: 500;
-  transition: all 0.3s ease;
-
-  &:hover {
-    background-color: var(--foreground);
-    color: var(--background);
-    transform: translateY(-2px);
-  }
-`;
-
 const AllChartsContainer = styled.div`
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  display: flex;
+  flex-direction: column;
   gap: 2rem;
   margin-bottom: 2rem;
 `;
@@ -91,6 +69,7 @@ const SectionTitle = styled.h2`
 
 const InvestorChartContainer = styled.div`
   display: flex;
+  width: 100%;
   flex-direction: column;
   gap: 1rem;
 `;
@@ -116,11 +95,11 @@ const ChartIndicator = styled.div<{ color: string }>`
  * 투자자별 순매수 현황을 보여주는 차트 컴포넌트
  */
 export default function ChartPage() {
+  const [showVolume, setShowVolume] = useState<boolean>(false);
   const [data, setData] = useState<TradeData[]>([]);
-  const [selectedInvestor, setSelectedInvestor] = useState('개인');
-  const [showVolume, setShowVolume] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [toggleTradeMountChart, setToggleTradeMountChart] = useState<boolean>(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -219,7 +198,8 @@ export default function ChartPage() {
       grid: {
         left: '5%',
         right: '8%',
-        bottom: showVolume ? '15%' : '25%',
+        bottom:0,
+        // bottom: showVolume ? '15%' : '25%',
         top: '15%',
         containLabel: true,
       },
@@ -240,33 +220,33 @@ export default function ChartPage() {
           start: 50,
           end: 100,
         },
-        {
-          type: 'slider',
-          start: 50,
-          end: 100,
-          bottom: showVolume ? 0 : '10%',
-          height: 20,
-          borderColor: 'transparent',
-          backgroundColor: 'rgba(255, 255, 255, 0.1)',
-          fillerColor: 'rgba(255, 255, 255, 0.1)',
-          handleStyle: {
-            color: '#fff',
-            borderColor: '#fff',
-          },
-          moveHandleStyle: {
-            color: '#fff',
-            borderColor: '#fff',
-          },
-          selectedDataBackground: {
-            lineStyle: {
-              color: '#fff',
-            },
-            areaStyle: {
-              color: '#fff',
-              opacity: 0.1,
-            },
-          },
-        },
+        // {
+        //   type: 'slider',
+        //   start: 50,
+        //   end: 100,
+        //   bottom: showVolume ? 0 : '10%',
+        //   height: 10,
+        //   borderColor: 'transparent',
+        //   backgroundColor: 'rgba(255, 255, 255, 0.1)',
+        //   fillerColor: 'rgba(255, 255, 255, 0.1)',
+        //   handleStyle: {
+        //     color: '#fff',
+        //     borderColor: '#fff',
+        //   },
+        //   moveHandleStyle: {
+        //     color: '#fff',
+        //     borderColor: '#fff',
+        //   },
+        //   selectedDataBackground: {
+        //     lineStyle: {
+        //       color: '#fff',
+        //     },
+        //     areaStyle: {
+        //       color: '#fff',
+        //       opacity: 0.1,
+        //     },
+        //   },
+        // },
       ],
       xAxis: {
         type: 'category',
@@ -431,11 +411,14 @@ export default function ChartPage() {
 
   return (
     <ChartContainer>
-      <ChartTitle>투자자별 순매수 현황</ChartTitle>
+      {/* <ChartTitle>투자자별 순매수 현황</ChartTitle> */}
+      <ToggleButton onClick={() => {
+        setToggleTradeMountChart(!toggleTradeMountChart);
+      }}>거래량</ToggleButton> 
 
       {/* 전체 차트 섹션 */}
       <ChartSection>
-        <SectionTitle>전체 투자자 현황</SectionTitle>
+        {/* <SectionTitle>전체 투자자 현황</SectionTitle> */}
         <AllChartsContainer>
           {['개인', '외국인', '기관'].map((investor) => (
             <InvestorChartContainer key={investor}>
@@ -448,16 +431,12 @@ export default function ChartPage() {
                   option={getChartOption(investor)}
                   style={{ height: '300px', width: '100%' }}
                 />
-              </ChartWrapper>
-              <ChartLabel>
-                <ChartIndicator color='#52c41a' />
-                {investor} 거래량
-              </ChartLabel>
-              <ChartWrapper>
+                
+                {toggleTradeMountChart && 
                 <ReactECharts
                   option={getChartOption(investor, true)}
                   style={{ height: '200px', width: '100%' }}
-                />
+                />}
               </ChartWrapper>
             </InvestorChartContainer>
           ))}
