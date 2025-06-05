@@ -13,5 +13,6 @@ export interface KisRequestHeaders extends AxiosHeaders {
   appkey: string; // 앱키 
   appsecret: string; // 앱시크릿키
   tr_id: string; // 거래ID 예: 'FHKST03010100'
+  tr_cont: string; // 거래연속여부
   custtype: string; // 고객구분 예: 'P' 개인, 'B' 기관
 }

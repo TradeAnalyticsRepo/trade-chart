@@ -17,7 +17,7 @@ interface TokenData {
     lastTokenDate: string;
 }
 
-async function fetchNewToken() {
+export async function fetchNewToken() {
     console.log('새로운 토큰 발급');
     const res = await fetch("https://openapi.koreainvestment.com:9443/oauth2/tokenP", {
         method: "POST",

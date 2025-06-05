@@ -5,7 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getToken } from '@/lib/tokenManager';
+import { getToken,  } from '@/lib/tokenManager';
 import axios from 'axios';
 import { BASE_URL, KIS_URL, KisRequestHeaders } from '@/types/url';
 import { InquireDailyItemChartPriceParams, InquireDailyItemChartPriceResponse } from '@/types/국내주식기간별시세';
@@ -37,6 +37,7 @@ export async function GET(req: NextRequest): Promise<NextResponse<InquireDailyIt
                 "Content-Type": 'application/json; charset=utf-8',
                 tr_id: 'FHKST03010100',
                 custtype: 'P',
+                tr_cont: 'N',
                 appkey: process.env.APP_KEY,
                 appsecret: process.env.APP_SECRET,
             } as KisRequestHeaders,

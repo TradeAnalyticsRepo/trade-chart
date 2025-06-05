@@ -1,26 +1,25 @@
 import axios from 'axios';
 import { ApiResponse, TradeData } from '@/types/trade';
 import { generateDates, generateMockData } from './mockData';
-import { KIS_URL } from '@/types/url';
 
 // const BASE_URL = '/api/trade';
 export const getApi = async () => {
-   const res = await axios.get('/api/foreign-institution-total', {
-    params: {
-      FID_COND_MRKT_DIV_CODE: 'J',
-      FID_INPUT_ISCD: '0000',
-    },
-
-
-  // const res = await axios.get('/api/inquire-daily-itemchartprice', {
+  //  const res = await axios.get('/api/foreign-institution-total', {
   //   params: {
   //     FID_COND_MRKT_DIV_CODE: 'J',
-  //     FID_INPUT_ISCD: '005930', // 삼성전자
-  //     FID_INPUT_DATE_1: '20250101',
-  //     FID_INPUT_DATE_2: '20250501',
-  //     FID_PERIOD_DIV_CODE: 'D',
-  //     FID_ORG_ADJ_PRC: '1'
+  //     FID_INPUT_ISCD: '0000',
   //   },
+
+
+  const res = await axios.get('/api/inquire-daily-itemchartprice', {
+    params: {
+      FID_COND_MRKT_DIV_CODE: 'J',
+      FID_INPUT_ISCD: '005930', // 삼성전자
+      FID_INPUT_DATE_1: '20250101',
+      FID_INPUT_DATE_2: '20250501',
+      FID_PERIOD_DIV_CODE: 'D',
+      FID_ORG_ADJ_PRC: '1'
+    },
   });
 
   console.log('📈 차트 데이터:', res.data);
