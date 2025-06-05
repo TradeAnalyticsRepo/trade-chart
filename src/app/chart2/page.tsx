@@ -432,36 +432,44 @@ export default function ChartPage() {
   return (
     <ChartContainer>
       <ChartTitle>투자자별 순매수 현황</ChartTitle>
-
-      {/* 전체 차트 섹션 */}
+      {/* 개별 차트 섹션 */}
       <ChartSection>
-        <SectionTitle>전체 투자자 현황</SectionTitle>
-        <AllChartsContainer>
+        <SectionTitle>상세 투자자 현황</SectionTitle>
+        <ChartControls>
           {['개인', '외국인', '기관'].map((investor) => (
-            <InvestorChartContainer key={investor}>
-              <ChartLabel>
-                <ChartIndicator color='#1890ff' />
-                {investor} 투자자
-              </ChartLabel>
-              <ChartWrapper>
-                <ReactECharts
-                  option={getChartOption(investor)}
-                  style={{ height: '300px', width: '100%' }}
-                />
-              </ChartWrapper>
-              <ChartLabel>
-                <ChartIndicator color='#52c41a' />
-                {investor} 거래량
-              </ChartLabel>
-              <ChartWrapper>
-                <ReactECharts
-                  option={getChartOption(investor, true)}
-                  style={{ height: '200px', width: '100%' }}
-                />
-              </ChartWrapper>
-            </InvestorChartContainer>
+            <ControlButton
+              key={investor}
+              onClick={() => setSelectedInvestor(investor)}
+              style={{
+                backgroundColor: selectedInvestor === investor ? 'var(--foreground)' : 'transparent',
+                color: selectedInvestor === investor ? 'var(--background)' : 'var(--foreground)',
+              }}>
+              {investor}
+            </ControlButton>
           ))}
-        </AllChartsContainer>
+        </ChartControls>
+        <InvestorChartContainer>
+          <ChartLabel>
+            <ChartIndicator color='#1890ff' />
+            {selectedInvestor} 투자자 주가 및 순매수
+          </ChartLabel>
+          <ChartWrapper>
+            <ReactECharts
+              option={getChartOption(selectedInvestor)}
+              style={{ height: '400px', width: '100%' }}
+            />
+          </ChartWrapper>
+          <ChartLabel>
+            <ChartIndicator color='#52c41a' />
+            {selectedInvestor} 투자자 거래량
+          </ChartLabel>
+          <ChartWrapper>
+            <ReactECharts
+              option={getChartOption(selectedInvestor, true)}
+              style={{ height: '200px', width: '100%' }}
+            />
+          </ChartWrapper>
+        </InvestorChartContainer>
       </ChartSection>
     </ChartContainer>
   );
