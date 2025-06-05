@@ -2,7 +2,7 @@
  * [종목별 일별동향] 컬럼값 기준 타입 명시. 
  * 해당 데이터를 기준으로 차트 생성 
  */
-export interface ChartData  {
+export interface ExcelData  {
   tradeDate: string; // 날짜
   endMount: number; // 종가
   previousDayComparison: number; // 전일 대비
@@ -20,7 +20,18 @@ export interface ChartData  {
   otherFinancial: number; // 기타 금융
   pensionEtc: number; // 연금 등
   nationalLocal: number; // 국가 및 지방 공공기관
+
+
+  // 각각 개인/외국인/기관에 종속되는 데이터(집계 데이터(기준일자 기준))
+  accumulatedTotal: number; // 누적합계- SUM 
+  highestLowestPoint: number; // 최고저점 - MIN
+  collectionVolume: number; // 매집수량 - (SUM - MIN)
+  collectionHighestPoint: number; // 매집고점 - MAX
+  dispersionRatio: number; // 분산비율 - 매집수량/매집고점
 }
+
+
+
 
 
 /**
