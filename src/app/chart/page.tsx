@@ -1,11 +1,12 @@
 'use client';
 
 import ReactECharts from 'echarts-for-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import styled from '@emotion/styled';
 import { TradeData } from '@/types/trade';
 import { fetchTradeData, getApi } from '@/utils/api';
 import { createChartOption, createChartSeries } from '@/utils/chartUtils';
+import { handleExcel } from '@/utils/excelUtils';
 
 
 const ToggleButton = styled.button`
@@ -100,6 +101,9 @@ export default function ChartPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [toggleTradeMountChart, setToggleTradeMountChart] = useState<boolean>(false);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
 
   useEffect(() => {
     const fetchData = async () => {
@@ -409,12 +413,38 @@ export default function ChartPage() {
     );
   }
 
+  // 엑셀업로드 버튼 클릭 시 엑셀데이터 업로드
+  const handleExcelUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    try {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      handleExcel(file);
+      
+
+    } catch(err) {
+
+    }
+  }
+
+  
+
   return (
     <ChartContainer>
       {/* <ChartTitle>투자자별 순매수 현황</ChartTitle> */}
       <ToggleButton onClick={() => {
         setToggleTradeMountChart(!toggleTradeMountChart);
       }}>거래량</ToggleButton> 
+      <ToggleButton onClick={() => {
+        fileInputRef.current?.click();
+      }}>엑셀업로드
+        <input
+          type="file"
+          accept=".xlsx, .xls"
+          ref={fileInputRef}
+          style={{ display: 'none' }}
+          onChange={handleExcelUpload} />
+      </ToggleButton>
 
       {/* 전체 차트 섹션 */}
       <ChartSection>
