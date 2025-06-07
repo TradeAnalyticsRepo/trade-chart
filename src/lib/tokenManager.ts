@@ -36,10 +36,11 @@ export async function fetchNewToken() {
     return result;
 }
 
-export async function getToken(): Promise<{ tokenType: string; token: string }> {
+export async function getToken(): Promise<{ tokenType: string; token: string, resultCode: number }> {
     try {
         // 파일에서 토큰 조회
         const tokenData = await fs.readFile(TOKEN_FILE, 'utf-8');
+        console.log(tokenData);
         const data: TokenData = JSON.parse(tokenData);
         
         const now = Date.now();
@@ -48,7 +49,7 @@ export async function getToken(): Promise<{ tokenType: string; token: string }> 
         // 토큰이 유효하고 오늘 발급된 것인지 확인
         if (data.token && now < data.expiresAt && data.lastTokenDate === today) {
             console.log('캐시된 토큰 사용');
-            return { tokenType: data.tokenType, token: data.token };
+            return { tokenType: data.tokenType, token: data.token, resultCode: 200 };
         }
         
         // 오늘 이미 토큰을 발급받았다면 에러
@@ -60,6 +61,11 @@ export async function getToken(): Promise<{ tokenType: string; token: string }> 
         // 새 토큰 발급
         const newToken = await fetchNewToken();
         
+        // 서버오류로 토큰이 안받아지면 리턴
+        if(newToken.error_code) { 
+            return { tokenType: "", token: "", resultCode: 0 };
+        }
+
         // 파일에 저장
         await fs.writeFile(TOKEN_FILE, JSON.stringify({
             tokenType: newToken.token_type,
@@ -68,7 +74,7 @@ export async function getToken(): Promise<{ tokenType: string; token: string }> 
             lastTokenDate: today
         }));
         
-        return { tokenType: newToken.token_type, token: newToken.access_token };
+        return { tokenType: newToken.token_type, token: newToken.access_token, resultCode: 100 };
     } catch (error) {
         // 파일이 없거나 읽기 실패한 경우 새 토큰 발급
         if (error instanceof Error && error.message === '오늘은 이미 토큰을 발급받았습니다.') {
@@ -79,6 +85,10 @@ export async function getToken(): Promise<{ tokenType: string; token: string }> 
         const newToken = await fetchNewToken();
         const today = new Date().toISOString().split('T')[0];
         
+        if(newToken.error_code) {
+            return {tokenType: "", token: "", resultCode: 0}
+        }
+
         // 파일에 저장
         await fs.writeFile(TOKEN_FILE, JSON.stringify({
             tokenType: newToken.token_type,
@@ -87,6 +97,6 @@ export async function getToken(): Promise<{ tokenType: string; token: string }> 
             lastTokenDate: today
         }));
         
-        return { tokenType: newToken.token_type, token: newToken.access_token };
+        return { tokenType: newToken.token_type, token: newToken.access_token, resultCode: 100 };
     }
 }

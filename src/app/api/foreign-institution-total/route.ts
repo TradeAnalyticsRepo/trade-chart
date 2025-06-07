@@ -16,7 +16,9 @@ import { BASE_URL, KIS_URL, KisRequestHeaders } from '@/types/url';
  */
 export async function GET(req: NextRequest): Promise<NextResponse<ForeignInstitutionTotalResponse>> {
     try {
-        const { tokenType, token } = await getToken();
+        const { tokenType, token, resultCode } = await getToken();
+        // if(!resultCode) return null
+
         const { searchParams } = new URL(req.url);
         
         const url = `${BASE_URL}${KIS_URL.국내기관_외국인_매매종목가집계}`
