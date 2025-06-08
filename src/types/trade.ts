@@ -7,27 +7,48 @@ export interface ExcelData  {
   endMount: number; // 종가
   previousDayComparison: number; // 전일 대비
   tradingVolume: number; // 거래량
-  foreigner: number; // 외국인
-  individual: number; // 개인
-  totalInstitution: number; // 총 기관
-  institution: number; // 기관
-  etc: number; // 기타
-  financialInvestment: number; // 금융투자
-  generalTrust: number; // 일반신탁
-  specialTrust: number; // 특수신탁
-  bank: number; // 은행
-  insurance: number; // 보험
-  otherFinancial: number; // 기타 금융
-  pensionEtc: number; // 연금 등
-  nationalLocal: number; // 국가 및 지방 공공기관
 
 
   // 각각 개인/외국인/기관에 종속되는 데이터(집계 데이터(기준일자 기준))
-  accumulatedTotal: number; // 누적합계- SUM 
-  highestLowestPoint: number; // 최고저점 - MIN
-  collectionVolume: number; // 매집수량 - (SUM - MIN)
-  collectionHighestPoint: number; // 매집고점 - MAX
-  dispersionRatio: number; // 분산비율 - 매집수량/매집고점
+  indivCollectionVolume: number; // 개인매집수량
+  indivDispersionRatio: number; // 개인분산비율 
+
+  totalForeAndInstCollectionVolume: number; // 외국인 + 기관매집수량
+  totalForeAndInstDispersionRatio: number; // 외국인 + 기관분산비율 
+
+  foreCollectionVolume: number; // 외국인매집수량
+  foreDispersionRatio: number; // 외국인분산비율 
+
+  totalInsCollectionVolume: number; // 기관종합매집수량
+  totalInsDispersionRatio: number; // 기관종합분산비율 
+
+  finInvCollectionVolume: number; // 금융투자(기관)매집수량
+  finInvDispersionRatio: number; // 금융투자(기관)분산비율 
+
+  insurCollectionVolume: number; // 보험매집수량
+  insurDispersionRatio: number; // 보험분산비율 
+
+  trustCollectionVolume: number; // 투신(일반 + 특수)매집수량
+  trustDispersionRatio: number; // 투신(일반 + 특수)분산비율 
+
+  etcFinCollectionVolume: number; // 기타금융매집수량
+  etcFinDispersionRatio: number; // 기타금융분산비율 
+
+  bankCollectionVolume: number; // 은행매집수량
+  bankDispersionRatio: number; // 은행분산비율 
+
+  pensCollectionVolume: number; // 연기금매집수량
+  pensDispersionRatio: number; // 연기금분산비율 
+
+  sTrustCollectionVolume: number; // 사모펀드매집수량
+  sTrustDispersionRatio: number; // 사모펀드분산비율 
+
+  natCollectionVolume: number; // 국가매집수량
+  natDispersionRatio: number; // 국가분산비율 
+
+  etcCollectionVolume: number; // 기타법인매집수량
+  etcDispersionRatio: number; // 기타법인분산비율 
+
 }
 
 
