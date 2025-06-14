@@ -1,6 +1,7 @@
 import { baseDataBeforeProcess, originalExcelFile } from '@/types/excel';
 import { ExcelData } from '@/types/trade';
 import * as XLSX from 'xlsx';
+import { callPostApi } from './api';
 
 const excelEnum = Object.freeze({
     '개인': 'Indiv',
@@ -29,16 +30,23 @@ export const handleExcel = async (originalExcelFile: File) => {
 
     const workbook = XLSX.read(buffer, { type: 'buffer' });
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
-    const data = XLSX.utils.sheet_to_json(sheet);
+    const data: originalExcelFile[] = XLSX.utils.sheet_to_json(sheet);
 
     console.log(data);
 
     const baseDataBeforeProcess:baseDataBeforeProcess = stockDataBeforeProcess(data);
     
     // promise로 병렬처리 어떤지 고민
-    processingExcelData(data, baseDataBeforeProcess.cumulativeStockData);
+    const graphProcessingData: ExcelData[] = processingExcelData(data, baseDataBeforeProcess.cumulativeStockData);
+    const parameter = {
+        stockId: '11111',
+        processingData: graphProcessingData,
+        type: 'graph'
+    }
+    console.log(parameter);
+    callPostApi('/api/excel', parameter);
     processingExcelData2(data);
-  
+    
 }
 
 export const stockDataBeforeProcess = (data: originalExcelFile[]): baseDataBeforeProcess => {
@@ -160,20 +168,24 @@ export const stockDataBeforeProcess = (data: originalExcelFile[]): baseDataBefor
 }
 
 
-// 수급계산 로직
+// 수급계산 로직 
+// 
 export const processingExcelData = (data: originalExcelFile[], cumulativeStockData: baseDataBeforeProcess["cumulativeStockData"]) => {
-    let indivCollectionVolume = cumulativeStockData.cumulativeIndivMount - cumulativeStockData.minIndivMount;
-    let totalForeAndInstCollectionVolume = cumulativeStockData.cumulativeTotalForeAndInstMount;
-    let foreCollectionVolume = cumulativeStockData.cumulativeForeMount;
-    let finInvCollectionVolume = cumulativeStockData.cumulativeFinInvMount;
-    let insurCollectionVolume = cumulativeStockData.cumulativeInsurMount;
-    let trustCollectionVolume = cumulativeStockData.cumulativeTrustMount;
-    let etcFinCollectionVolume = cumulativeStockData.cumulativeEtcFinMount;
-    let bankCollectionVolume = cumulativeStockData.cumulativeBankMount;
-    let pensCollectionVolume = cumulativeStockData. cumulativePensMount;
-    let sTrustCollectionVolume = cumulativeStockData.cumulativeSTrustMount;
-    let natCollectionVolume = cumulativeStockData.cumulativeNatMount;
-    let etcCollectionVolume = cumulativeStockData.cumulativeEtcMount;
+    let volume = {
+        indivCollectionVolume : cumulativeStockData.cumulativeIndivMount - cumulativeStockData.minIndivMount,
+        totalForeAndInstCollectionVolume : cumulativeStockData.cumulativeTotalForeAndInstMount - cumulativeStockData.minTotalForeAndInstMount,
+        foreCollectionVolume : cumulativeStockData.cumulativeForeMount - cumulativeStockData.minForeMount,
+        totalInsCollectionVolume : cumulativeStockData.cumulativeTotalInsMount - cumulativeStockData.minTotalInsMount,
+        finInvCollectionVolume : cumulativeStockData.cumulativeFinInvMount - cumulativeStockData.minFinInvMount,
+        insurCollectionVolume : cumulativeStockData.cumulativeInsurMount - cumulativeStockData.minInsurMount,
+        trustCollectionVolume : cumulativeStockData.cumulativeTrustMount - cumulativeStockData.minTrustMount,
+        etcFinCollectionVolume : cumulativeStockData.cumulativeEtcFinMount - cumulativeStockData.minEtcFinMount,
+        bankCollectionVolume : cumulativeStockData.cumulativeBankMount - cumulativeStockData.minBankMount,
+        pensCollectionVolume : cumulativeStockData. cumulativePensMount - cumulativeStockData.minPensMount,
+        sTrustCollectionVolume : cumulativeStockData.cumulativeSTrustMount - cumulativeStockData.minSTrustMount,
+        natCollectionVolume : cumulativeStockData.cumulativeNatMount - cumulativeStockData.minNatMount,
+        etcCollectionVolume : cumulativeStockData.cumulativeEtcMount - cumulativeStockData.minEtcMount,
+    }
 
     const result: ExcelData[] = [
 
@@ -181,50 +193,59 @@ export const processingExcelData = (data: originalExcelFile[], cumulativeStockDa
 
     data.forEach(item => {
         if(!item.일자) return;
-        indivCollectionVolume -= item.개인
-
+        Object.entries(excelEnum).forEach(([key, value]) => {
+            if(value === 'Trust') {
+                volume.trustCollectionVolume += (item.__EMPTY_1 + item.__EMPTY_2);
+            } else if (value === 'TotalForeAndInst') {
+                volume.totalForeAndInstCollectionVolume += (item.외국인 + item.기관종합);
+            } else {
+                volume[`${value.toLowerCase()}CollectionVolume`] += item[key];
+            }
+        });
 
         const data:ExcelData = {
-            tradeDate: '',
-            endMount: 0,
-            previousDayComparison: 0,
-            tradingVolume: 0,
-            indivCollectionVolume: indivCollectionVolume,
-            indivDispersionRatio: indivCollectionVolume / ( cumulativeStockData.maxIndivMount - cumulativeStockData.minIndivMount ),
-            totalForeAndInstCollectionVolume: 0,
-            totalForeAndInstDispersionRatio: 0,
-            foreCollectionVolume: 0,
-            foreDispersionRatio: 0,
-            totalInsCollectionVolume: 0,
-            totalInsDispersionRatio: 0,
-            finInvCollectionVolume: 0,
-            finInvDispersionRatio: 0,
-            insurCollectionVolume: 0,
-            insurDispersionRatio: 0,
-            trustCollectionVolume: 0,
-            trustDispersionRatio: 0,
-            etcFinCollectionVolume: 0,
-            etcFinDispersionRatio: 0,
-            bankCollectionVolume: 0,
-            bankDispersionRatio: 0,
-            pensCollectionVolume: 0,
-            pensDispersionRatio: 0,
-            sTrustCollectionVolume: 0,
-            sTrustDispersionRatio: 0,
-            natCollectionVolume: 0,
-            natDispersionRatio: 0,
-            etcCollectionVolume: 0,
-            etcDispersionRatio: 0
+            tradeDate: item.일자,
+            endMount: item.종가,
+            previousDayComparison: item.__EMPTY,
+            tradingVolume: item.거래량,
+            indivCollectionVolume: volume.indivCollectionVolume,
+            indivDispersionRatio: calcPercent(volume.indivCollectionVolume, ( cumulativeStockData.maxIndivMount - cumulativeStockData.minIndivMount )),
+            totalForeAndInstCollectionVolume: volume.totalForeAndInstCollectionVolume,
+            totalForeAndInstDispersionRatio: calcPercent(volume.totalForeAndInstCollectionVolume, ( cumulativeStockData.maxTotalForeAndInstMount - cumulativeStockData.minTotalForeAndInstMount)),
+            foreCollectionVolume: volume.foreCollectionVolume,
+            foreDispersionRatio: calcPercent(volume.foreCollectionVolume, (cumulativeStockData.maxForeMount - cumulativeStockData.minForeMount)),
+            totalInsCollectionVolume: volume.totalInsCollectionVolume,
+            totalInsDispersionRatio: calcPercent(volume.totalInsCollectionVolume, (cumulativeStockData.maxTotalInsMount - cumulativeStockData.minTotalInsMount)),
+            finInvCollectionVolume: volume.finInvCollectionVolume,
+            finInvDispersionRatio: calcPercent(volume.finInvCollectionVolume, (cumulativeStockData.maxFinInvMount - cumulativeStockData.minFinInvMount)), 
+            insurCollectionVolume: volume.insurCollectionVolume, 
+            insurDispersionRatio: calcPercent(volume.insurCollectionVolume, (cumulativeStockData.maxInsurMount - cumulativeStockData.minInsurMount)),
+            trustCollectionVolume: volume.trustCollectionVolume,
+            trustDispersionRatio: calcPercent(volume.trustCollectionVolume, (cumulativeStockData.maxTrustMount - cumulativeStockData.minTrustMount)),
+            etcFinCollectionVolume: volume.etcFinCollectionVolume,
+            etcFinDispersionRatio: calcPercent(volume.etcFinCollectionVolume, (cumulativeStockData.maxEtcFinMount - cumulativeStockData.minEtcFinMount)),
+            bankCollectionVolume: volume.bankCollectionVolume,
+            bankDispersionRatio: calcPercent(volume.bankCollectionVolume, (cumulativeStockData.maxBankMount - cumulativeStockData.minBankMount)),
+            pensCollectionVolume: volume.pensCollectionVolume,
+            pensDispersionRatio: calcPercent(volume.pensCollectionVolume, (cumulativeStockData.maxPensMount - cumulativeStockData.minPensMount)),
+            sTrustCollectionVolume: volume.sTrustCollectionVolume,
+            sTrustDispersionRatio: calcPercent(volume.sTrustCollectionVolume, (cumulativeStockData.maxSTrustMount - cumulativeStockData.minSTrustMount)),
+            natCollectionVolume: volume.natCollectionVolume,
+            natDispersionRatio: calcPercent(volume.natCollectionVolume, (cumulativeStockData.maxNatMount - cumulativeStockData.minNatMount)),
+            etcCollectionVolume: volume.etcCollectionVolume,
+            etcDispersionRatio: calcPercent(volume.etcCollectionVolume, (cumulativeStockData.maxEtcMount - cumulativeStockData.minEtcMount)),
         };
 
         result.push(data);
     });
 
-    console.log(result);
-
+    return result;
 }
 
 // 수급분석표 로직
 export const processingExcelData2 = (data: originalExcelFile) => {
     
 }
+
+const calcPercent = (num1: number, num2: number) => Math.round(num1 / num2 * 100);
+

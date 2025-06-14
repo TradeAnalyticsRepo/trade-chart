@@ -25,6 +25,14 @@ export const getApi = async () => {
   console.log('📈 차트 데이터:', res.data);
 };
 
+export const callPostApi = async (url: string, parameter: any, headers: object = {'Content-Type': 'application/json'}) => {
+  try {
+    const result = await axios.post(url, parameter, { headers});
+    
+  } catch(error) {
+    console.error('callApi 오류 발생:', error);
+  }
+}
 
 /**
  * API 응답 데이터를 TradeData 형식으로 변환
