@@ -3,52 +3,84 @@
  * 해당 데이터를 기준으로 차트 생성 
  */
 export interface ExcelData  {
-  tradeDate: string; // 날짜
-  endMount: number; // 종가
-  previousDayComparison: number; // 전일 대비
-  tradingVolume: number; // 거래량
+  /** 거래 날짜 */
+  tradeDate: string;
+  /** 종가 */
+  endMount: number;
+  /** 전일 대비 */
+  previousDayComparison: number;
+  /** 거래량 */
+  tradingVolume: number;
 
+  /** 주가선도 */
+  stockMomentum: number;
+  /** 상관계수 */
+  stockCorrelation: number;
 
-  // 각각 개인/외국인/기관에 종속되는 데이터(집계 데이터(기준일자 기준))
-  indivCollectionVolume: number; // 개인매집수량
-  indivDispersionRatio: number; // 개인분산비율 
+  /** 개인매집수량 */
+  indivCollectionVolume: number;
+  /** 개인분산비율 */
+  indivDispersionRatio: number;
 
-  totalForeAndInstCollectionVolume: number; // 외국인 + 기관매집수량
-  totalForeAndInstDispersionRatio: number; // 외국인 + 기관분산비율 
+  /** 외국인 + 기관매집수량 */
+  totalForeAndInstCollectionVolume: number;
+  /** 외국인 + 기관분산비율 */
+  totalForeAndInstDispersionRatio: number;
 
-  foreCollectionVolume: number; // 외국인매집수량
-  foreDispersionRatio: number; // 외국인분산비율 
+  /** 외국인매집수량 */
+  foreCollectionVolume: number;
+  /** 외국인분산비율 */
+  foreDispersionRatio: number;
 
-  totalInsCollectionVolume: number; // 기관종합매집수량
-  totalInsDispersionRatio: number; // 기관종합분산비율 
+  /** 기관종합매집수량 */
+  totalInsCollectionVolume: number;
+  /** 기관종합분산비율 */
+  totalInsDispersionRatio: number;
 
-  finInvCollectionVolume: number; // 금융투자(기관)매집수량
-  finInvDispersionRatio: number; // 금융투자(기관)분산비율 
+  /** 금융투자(기관)매집수량 */
+  finInvCollectionVolume: number;
+  /** 금융투자(기관)분산비율 */
+  finInvDispersionRatio: number;
 
-  insurCollectionVolume: number; // 보험매집수량
-  insurDispersionRatio: number; // 보험분산비율 
+  /** 보험매집수량 */
+  insurCollectionVolume: number;
+  /** 보험분산비율 */
+  insurDispersionRatio: number;
 
-  trustCollectionVolume: number; // 투신(일반 + 특수)매집수량
-  trustDispersionRatio: number; // 투신(일반 + 특수)분산비율 
+  /** 투신(일반 + 특수)매집수량 */
+  trustCollectionVolume: number;
+  /** 투신(일반 + 특수)분산비율 */
+  trustDispersionRatio: number;
 
-  etcFinCollectionVolume: number; // 기타금융매집수량
-  etcFinDispersionRatio: number; // 기타금융분산비율 
+  /** 기타금융매집수량 */
+  etcFinCollectionVolume: number;
+  /** 기타금융분산비율 */
+  etcFinDispersionRatio: number;
 
-  bankCollectionVolume: number; // 은행매집수량
-  bankDispersionRatio: number; // 은행분산비율 
+  /** 은행매집수량 */
+  bankCollectionVolume: number;
+  /** 은행분산비율 */
+  bankDispersionRatio: number;
 
-  pensCollectionVolume: number; // 연기금매집수량
-  pensDispersionRatio: number; // 연기금분산비율 
+  /** 연기금매집수량 */
+  pensCollectionVolume: number;
+  /** 연기금분산비율 */
+  pensDispersionRatio: number;
 
-  sTrustCollectionVolume: number; // 사모펀드매집수량
-  sTrustDispersionRatio: number; // 사모펀드분산비율 
+  /** 사모펀드매집수량 */
+  sTrustCollectionVolume: number;
+  /** 사모펀드분산비율 */
+  sTrustDispersionRatio: number;
 
-  natCollectionVolume: number; // 국가매집수량
-  natDispersionRatio: number; // 국가분산비율 
+  /** 국가매집수량 */
+  natCollectionVolume: number;
+  /** 국가분산비율 */
+  natDispersionRatio: number;
 
-  etcCollectionVolume: number; // 기타법인매집수량
-  etcDispersionRatio: number; // 기타법인분산비율 
-
+  /** 기타법인매집수량 */
+  etcCollectionVolume: number;
+  /** 기타법인분산비율 */
+  etcDispersionRatio: number;
 }
 
 
