@@ -234,6 +234,9 @@ export const processingExcelData = (data: originalExcelFile[], cumulativeStockDa
             natDispersionRatio: calcPercent(volume.natCollectionVolume, (cumulativeStockData.maxNatMount - cumulativeStockData.minNatMount)),
             etcCollectionVolume: volume.etcCollectionVolume,
             etcDispersionRatio: calcPercent(volume.etcCollectionVolume, (cumulativeStockData.maxEtcMount - cumulativeStockData.minEtcMount)),
+
+            indivStockMomentum: calcPercent(volume.indivCollectionVolume, (volume.indivCollectionVolume + volume.totalForeAndInstCollectionVolume + volume.totalInsCollectionVolume + volume.foreCollectionVolume + volume.totalInsCollectionVolume + volume.finInvCollectionVolume + volume.insurCollectionVolume + volume.trustCollectionVolume + volume.etcFinCollectionVolume + volume.bankCollectionVolume + volume.pensCollectionVolume + volume.natCollectionVolume + volume.etcCollectionVolume)),
+            
         };
 
         result.push(data);

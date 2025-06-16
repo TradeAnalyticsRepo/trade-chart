@@ -3,8 +3,19 @@
  * 해당 데이터를 기준으로 차트 생성 
  */
 export interface ExcelData  {
-  tradingVolumeIdv: number; 
+  tradingVolumeTotalForeAndInst: number;
+  tradingVolumeIndiv: number;
   tradingVolumeFore: number;
+  tradingVolumeTotalIns: number;
+  tradingVolumeFinInv: number;
+  tradingVolumeEtc: number;
+  tradingVolumeTrust: number;
+  tradingVolumeSTrust: number;
+  tradingVolumeBank: number;
+  tradingVolumeInsur: number;
+  tradingVolumeEtcFin: number;
+  tradingVolumePens: number;
+  tradingVolumeNat: number;
   // foreigner: number; // 외국인
   // individual: number; // 개인
   // totalInstitution: number; // 총 기관
@@ -39,11 +50,15 @@ export interface ExcelData  {
   indivCollectionVolume: number;
   /** 개인분산비율 */
   indivDispersionRatio: number;
+  /** 개인주가선도 */
+  indivStockMomentum: number;
 
   /** 외국인 + 기관매집수량 */
   totalForeAndInstCollectionVolume: number;
   /** 외국인 + 기관분산비율 */
   totalForeAndInstDispersionRatio: number;
+  /** 외국인 + 기관주가선도 */
+  totalForeAndInst 
 
   /** 외국인매집수량 */
   foreCollectionVolume: number;
