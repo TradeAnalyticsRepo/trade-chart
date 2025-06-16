@@ -3,6 +3,24 @@
  * 해당 데이터를 기준으로 차트 생성 
  */
 export interface ExcelData  {
+  tradingVolumeIdv: number; 
+  tradingVolumeFore: number;
+  // foreigner: number; // 외국인
+  // individual: number; // 개인
+  // totalInstitution: number; // 총 기관
+  // institution: number; // 기관
+  // etc: number; // 기타
+  // financialInvestment: number; // 금융투자
+  // generalTrust: number; // 일반신탁
+  // specialTrust: number; // 특수신탁
+  // bank: number; // 은행
+  // insurance: number; // 보험
+  // otherFinancial: number; // 기타 금융
+  // pensionEtc: number; // 연금 등
+  // nationalLocal: number; // 국가 및 지방 공공기관
+
+
+
   /** 거래 날짜 */
   tradeDate: string;
   /** 종가 */
