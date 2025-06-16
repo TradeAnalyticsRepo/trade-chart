@@ -7,11 +7,11 @@ import { TradeData } from '@/types/trade';
 import { fetchTradeData, getApi } from '@/utils/api';
 import { createChartOption, createChartSeries } from '@/utils/chartUtils';
 import { handleExcel } from '@/utils/excelUtils';
-
+import axios from 'axios';
 
 const ToggleButton = styled.button`
   width: 80px;
-`
+`;
 
 const ChartContainer = styled.div`
   width: 100%;
@@ -104,7 +104,6 @@ export default function ChartPage() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
@@ -129,7 +128,13 @@ export default function ChartPage() {
       }
     };
 
-    fetchData();
+    const getJsonData = async () => {
+      const res = await axios.get(`/api/excel?stockId=11111&type=graph`);
+      console.debug('res:', res.data);
+    };
+
+    getJsonData();
+    // fetchData();
   }, []);
 
   const getChartOption = (investor: string, showVolume: boolean = false) => {
@@ -163,8 +168,8 @@ export default function ChartPage() {
             opacity: 0.6,
             showSymbol: false,
             label: {
-              show: false
-            }
+              show: false,
+            },
           },
         ]
       : [
@@ -202,7 +207,7 @@ export default function ChartPage() {
       grid: {
         left: '5%',
         right: '8%',
-        bottom:0,
+        bottom: 0,
         // bottom: showVolume ? '15%' : '25%',
         top: '15%',
         containLabel: true,
@@ -215,8 +220,8 @@ export default function ChartPage() {
           color: 'var(--foreground)',
         },
         selected: {
-          '순매수': false,
-        }
+          순매수: false,
+        },
       },
       dataZoom: [
         {
@@ -420,30 +425,30 @@ export default function ChartPage() {
       if (!file) return;
 
       handleExcel(file);
-      
-
-    } catch(err) {
-
-    }
-  }
-
-  
+    } catch (err) {}
+  };
 
   return (
     <ChartContainer>
       {/* <ChartTitle>투자자별 순매수 현황</ChartTitle> */}
-      <ToggleButton onClick={() => {
-        setToggleTradeMountChart(!toggleTradeMountChart);
-      }}>거래량</ToggleButton> 
-      <ToggleButton onClick={() => {
-        fileInputRef.current?.click();
-      }}>엑셀업로드
+      <ToggleButton
+        onClick={() => {
+          setToggleTradeMountChart(!toggleTradeMountChart);
+        }}>
+        거래량
+      </ToggleButton>
+      <ToggleButton
+        onClick={() => {
+          fileInputRef.current?.click();
+        }}>
+        엑셀업로드
         <input
-          type="file"
-          accept=".xlsx, .xls"
+          type='file'
+          accept='.xlsx, .xls'
           ref={fileInputRef}
           style={{ display: 'none' }}
-          onChange={handleExcelUpload} />
+          onChange={handleExcelUpload}
+        />
       </ToggleButton>
 
       {/* 전체 차트 섹션 */}
@@ -461,12 +466,13 @@ export default function ChartPage() {
                   option={getChartOption(investor)}
                   style={{ height: '300px', width: '100%' }}
                 />
-                
-                {toggleTradeMountChart && 
-                <ReactECharts
-                  option={getChartOption(investor, true)}
-                  style={{ height: '200px', width: '100%' }}
-                />}
+
+                {toggleTradeMountChart && (
+                  <ReactECharts
+                    option={getChartOption(investor, true)}
+                    style={{ height: '200px', width: '100%' }}
+                  />
+                )}
               </ChartWrapper>
             </InvestorChartContainer>
           ))}
