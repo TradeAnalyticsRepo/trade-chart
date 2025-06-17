@@ -5,9 +5,10 @@ import { useEffect, useRef, useState } from 'react';
 import styled from '@emotion/styled';
 import { ExcelData, TradeData } from '@/types/trade';
 import { fetchTradeData, getApi } from '@/utils/api';
-import { createChartOption, createChartSeries } from '@/utils/chartUtils';
+import { createChartSeries } from '@/utils/chartUtils';
 import { handleExcel } from '@/utils/excelUtils';
 import axios from 'axios';
+import { json } from 'stream/consumers';
 
 const ToggleButton = styled.button`
   width: 80px;
@@ -96,6 +97,7 @@ const ChartIndicator = styled.div<{ color: string }>`
  * 투자자별 순매수 현황을 보여주는 차트 컴포넌트
  */
 export default function ChartPage() {
+  const [jsonData, setJsonData] = useState<ExcelData[]>([]);
   const [showVolume, setShowVolume] = useState<boolean>(false);
   const [data, setData] = useState<TradeData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -117,6 +119,7 @@ export default function ChartPage() {
         const formattedEndDate = endDate.toISOString().slice(0, 10).replace(/-/g, '');
 
         const tradeData = await fetchTradeData(formattedStartDate, formattedEndDate);
+        console.debug('tradeData:', tradeData);
 
         getApi();
         setData(tradeData);
@@ -134,104 +137,88 @@ export default function ChartPage() {
 
       const excelData: ExcelData[] = res.data;
 
-      const dates = [...new Set(excelData.map((item) => item.tradeDate))];
-      console.debug('dates:', dates);
+      setJsonData(excelData);
     };
 
     getJsonData();
     fetchData();
   }, []);
+  const getTestChart = (investor: string, showVolume: boolean = false) => {
+    // ExcelData를 날짜순으로 정렬 (최신이 뒤로)
+    const sortedData = jsonData.sort((a, b) => a.tradeDate.localeCompare(b.tradeDate));
+    const dates = sortedData.map((item) => item.tradeDate);
 
-  const getChartOption = (investor: string, showVolume: boolean = false) => {
-    const dates = [...new Set(data.map((item) => item.date))];
-    const investorData = data.filter((item) => item.investor === investor);
+    console.debug('dates length:', dates.length);
+    console.debug('last date:', dates[dates.length - 1]);
 
-    // OHLC 데이터 생성
-    const ohlcData = investorData.map((item) => [Number(item.open_price), Number(item.high_price), Number(item.low_price), Number(item.close_price)]);
+    // 개인 매집수량 데이터
+    const collectionData = sortedData.map((item) => item.indivCollectionVolume);
 
-    // 종가 데이터 (선 그래프용)
-    const closePrices = investorData.map((item) => Number(item.close_price));
-    const netAmounts = investorData.map((item) => Number(item.net_amt) / 100000000);
-    const volumes = investorData.map((item) => (Number(item.buy_amt) + Number(item.sell_amt)) / 100000000);
+    // Y축 최소/최대값 계산
+    const minValue = Math.min(...collectionData);
+    const maxValue = Math.max(...collectionData);
+    const valueRange = maxValue - minValue;
+    const yAxisMin = Math.floor(minValue - valueRange * 0.1);
+    const yAxisMax = Math.ceil(maxValue + valueRange * 0.1);
 
-    // Y축 최소/최대값 계산 (종가 기준)
-    const minPrice = Math.min(...closePrices);
-    const maxPrice = Math.max(...closePrices);
-    const priceRange = maxPrice - minPrice;
-    const yAxisMin = Math.floor(minPrice - priceRange * 0.1);
-    const yAxisMax = Math.ceil(maxPrice + priceRange * 0.1);
+    // 최초 줌 상태를 전체 데이터로 설정
+    const zoomStart = 0;
+    const zoomEnd = 100;
 
-    const series = showVolume
-      ? [
-          {
-            name: '거래량',
-            type: 'bar',
-            data: volumes,
-            itemStyle: {
-              color: (params: any) => (netAmounts[params.dataIndex] >= 0 ? '#ff4d4f' : '#52c41a'),
-            },
-            opacity: 0.6,
-            showSymbol: false,
-            label: {
-              show: false,
-            },
-          },
-        ]
-      : [
-          {
-            name: '주가',
-            type: 'candlestick',
-            data: ohlcData,
-            itemStyle: {
-              color: '#ff4d4f',
-              color0: '#52c41a',
-              borderColor: '#ff4d4f',
-              borderColor0: '#52c41a',
-            },
-          },
-          {
-            name: '종가',
-            type: 'line',
-            data: closePrices,
-            smooth: true,
-            showSymbol: false,
-            lineStyle: {
-              width: 2,
-              color: '#1890ff',
-            },
-            z: 1,
-          },
-          createChartSeries('순매수', 'line', netAmounts, 1, {
-            areaStyle: { opacity: 0.1 },
-          }),
-        ];
+    const series = [
+      {
+        name: '개인 매집수량',
+        type: 'line',
+        data: collectionData,
+        smooth: true,
+        showSymbol: false,
+        lineStyle: {
+          width: 2,
+          color: '#1890ff',
+        },
+        areaStyle: {
+          opacity: 0.1,
+          color: '#1890ff',
+        },
+      },
+    ];
 
     return {
-      ...createChartOption(showVolume ? `${investor} 거래량` : `${investor} 투자자 순매수 현황`, dates, series),
+      title: {
+        text: '개인 투자자 매집수량',
+        left: 'center',
+        textStyle: {
+          color: 'var(--foreground)',
+        },
+      },
       backgroundColor: 'transparent',
       grid: {
         left: '5%',
         right: '8%',
-        bottom: 0,
+        bottom: '15%',
         top: '15%',
         containLabel: true,
-      },
-      legend: {
-        show: !showVolume,
-        data: series.map((s) => s.name),
-        top: 30,
-        textStyle: {
-          color: 'var(--foreground)',
-        },
-        selected: {
-          순매수: false,
-        },
       },
       dataZoom: [
         {
           type: 'inside',
-          start: 50,
-          end: 100,
+          start: zoomStart,
+          end: zoomEnd,
+        },
+        {
+          type: 'slider',
+          start: zoomStart,
+          end: zoomEnd,
+          bottom: '5%',
+          height: 20,
+          borderColor: 'rgba(255, 255, 255, 0.2)',
+          fillerColor: 'rgba(255, 255, 255, 0.1)',
+          handleStyle: {
+            color: '#1890ff',
+          },
+          textStyle: {
+            color: '#fff',
+          },
         },
       ],
       xAxis: {
@@ -245,12 +232,46 @@ export default function ChartPage() {
             const month = date.getMonth() + 1;
             const day = date.getDate();
 
-            const prevDate = new Date(dates[dates.indexOf(value) - 1] || '');
-            const showYear = !prevDate || prevDate.getFullYear() !== year || prevDate.getMonth() !== date.getMonth();
-
-            return showYear ? `${year}/${month}/${day}` : `${month}/${day}`;
+            return `${year}/${month}/${day}`;
           },
-          interval: Math.floor(dates.length / 20),
+          interval: (index: number, value: string) => {
+            // 전체 데이터 개수
+            const totalDataCount = dates.length;
+
+            // 현재 표시되는 데이터 개수를 추정 (줌 레벨에 따라)
+            const zoomRange = zoomEnd - zoomStart;
+            const estimatedVisibleCount = Math.ceil((zoomRange / 100) * totalDataCount);
+
+            // 최초 로드 시 (전체 데이터 보기) - 마지막과 최신 일자는 항상 표시
+            if (zoomRange >= 95) {
+              // 전체 데이터가 보일 때는 간격을 더 크게
+              if (index % 50 === 0 || index === 0 || index === totalDataCount - 1) {
+                return true;
+              }
+              return false;
+            }
+
+            // 확대된 상태에 따라 간격 조정
+            if (estimatedVisibleCount <= 15) {
+              // 15개 이하일 때 (매우 확대된 상태) - 모든 날짜 표시
+              return true;
+            } else if (estimatedVisibleCount <= 30) {
+              // 30개 이하일 때 - 3개마다 표시
+              return index % 3 === 0;
+            } else if (estimatedVisibleCount <= 60) {
+              // 60개 이하일 때 - 5개마다 표시
+              return index % 5 === 0;
+            } else if (estimatedVisibleCount <= 120) {
+              // 120개 이하일 때 - 10개마다 표시
+              return index % 10 === 0;
+            } else if (estimatedVisibleCount <= 300) {
+              // 300개 이하일 때 - 20개마다 표시
+              return index % 20 === 0;
+            } else {
+              // 300개 초과일 때 - 50개마다 표시하되, 마지막과 최신 일자는 항상 표시
+              return index % 50 === 0 || index === 0 || index === totalDataCount - 1;
+            }
+          },
           rotate: 45,
           margin: 15,
         },
@@ -263,76 +284,27 @@ export default function ChartPage() {
           show: false,
         },
       },
-      yAxis: showVolume
-        ? [
-            {
-              type: 'value',
-              name: '거래량(억원)',
-              position: 'left',
-              axisLabel: {
-                formatter: '{value}억',
-                color: '#fff',
-                margin: 20,
-              },
-              nameTextStyle: {
-                color: '#fff',
-                padding: [0, 0, 0, 40],
-              },
-              splitLine: {
-                lineStyle: {
-                  color: 'rgba(255, 255, 255, 0.1)',
-                },
-              },
-            },
-          ]
-        : [
-            {
-              type: 'value',
-              name: '종가(원)',
-              position: 'left',
-              min: yAxisMin,
-              max: yAxisMax,
-              axisLabel: {
-                formatter: (value: number) => {
-                  if (value >= 100000000) {
-                    return (value / 100000000).toFixed(1) + '억';
-                  } else if (value >= 10000) {
-                    return (value / 10000).toFixed(0) + '만';
-                  }
-                  return value.toLocaleString();
-                },
-                color: '#fff',
-                margin: 20,
-              },
-              nameTextStyle: {
-                color: '#fff',
-                padding: [0, 0, 0, 40],
-              },
-              splitLine: {
-                lineStyle: {
-                  color: 'rgba(255, 255, 255, 0.1)',
-                },
-              },
-            },
-            {
-              type: 'value',
-              name: '순매수(억원)',
-              position: 'right',
-              offset: 80,
-              axisLabel: {
-                formatter: '{value}억',
-                color: '#fff',
-                margin: 20,
-              },
-              nameTextStyle: {
-                color: '#fff',
-                padding: [0, 40, 0, 0],
-              },
-              splitLine: {
-                show: false,
-              },
-            },
-          ],
+      yAxis: {
+        type: 'value',
+        name: '매집수량',
+        position: 'left',
+        min: yAxisMin,
+        max: yAxisMax,
+        axisLabel: {
+          formatter: '{value}',
+          color: '#fff',
+          margin: 20,
+        },
+        nameTextStyle: {
+          color: '#fff',
+          padding: [0, 0, 0, 40],
+        },
+        splitLine: {
+          lineStyle: {
+            color: 'rgba(255, 255, 255, 0.1)',
+          },
+        },
+      },
       tooltip: {
         trigger: 'axis',
         axisPointer: {
@@ -347,34 +319,19 @@ export default function ChartPage() {
           color: '#fff',
         },
         formatter: (params: any) => {
-          const date = new Date(params[0].axisValue);
-          const formattedDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-          let result = `${formattedDate}<br/>`;
+          const date = params[0].axisValue;
+          const dataIndex = dates.indexOf(date);
+          const data = sortedData[dataIndex];
 
-          if (!showVolume) {
-            // 캔들 데이터 포맷팅
-            const candleData = params[0].data;
-            result += `시가: ${Number(candleData[0]).toLocaleString()}원<br/>`;
-            result += `고가: ${Number(candleData[1]).toLocaleString()}원<br/>`;
-            result += `저가: ${Number(candleData[2]).toLocaleString()}원<br/>`;
-            result += `종가: ${Number(candleData[3]).toLocaleString()}원<br/>`;
-
-            // 순매수 데이터 포맷팅
-            params.slice(2).forEach((param: any) => {
-              const value = Number(param.value).toLocaleString();
-              result += `${param.seriesName}: ${value}억원<br/>`;
-            });
-          } else {
-            // 거래량 데이터 포맷팅
-            params.forEach((param: any) => {
-              const value = Number(param.value).toLocaleString();
-              result += `${param.seriesName}: ${value}억원<br/>`;
-            });
-          }
+          let result = `${date}<br/>`;
+          result += `매집수량: ${Number(params[0].value).toLocaleString()}<br/>`;
+          result += `종가: ${Number(data.endMount).toLocaleString()}원<br/>`;
+          result += `전일대비: ${data.previousDayComparison}%<br/>`;
 
           return result;
         },
       },
+      series: series,
     };
   };
 
@@ -432,27 +389,25 @@ export default function ChartPage() {
       <ChartSection>
         {/* <SectionTitle>전체 투자자 현황</SectionTitle> */}
         <AllChartsContainer>
-          {['개인', '외국인', '기관'].map((investor) => (
-            <InvestorChartContainer key={investor}>
-              <ChartLabel>
-                <ChartIndicator color='#1890ff' />
-                {investor} 투자자
-              </ChartLabel>
-              <ChartWrapper>
-                <ReactECharts
-                  option={getChartOption(investor)}
-                  style={{ height: '300px', width: '100%' }}
-                />
+          <InvestorChartContainer key={''}>
+            <ChartLabel>
+              <ChartIndicator color='#1890ff' />
+              개인 투자자
+            </ChartLabel>
+            <ChartWrapper>
+              <ReactECharts
+                option={getTestChart('개인', false)}
+                style={{ height: '300px', width: '100%' }}
+              />
 
-                {toggleTradeMountChart && (
-                  <ReactECharts
-                    option={getChartOption(investor, true)}
-                    style={{ height: '200px', width: '100%' }}
-                  />
-                )}
-              </ChartWrapper>
-            </InvestorChartContainer>
-          ))}
+              {/* {toggleTradeMountChart && (
+                <ReactECharts
+                  option={getChartOption(investor, true)}
+                  style={{ height: '200px', width: '100%' }}
+                />
+              )} */}
+            </ChartWrapper>
+          </InvestorChartContainer>
         </AllChartsContainer>
       </ChartSection>
     </ChartContainer>
