@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
+import { ExcelData } from '@/types/trade';
 
 export async function POST(req: NextRequest, res: NextResponse) {
   try {
@@ -42,7 +43,6 @@ export async function GET(req: NextRequest, res: NextResponse) {
 
     const fileContent = fs.readFileSync(filePath, 'utf-8');
     const data = JSON.parse(fileContent);
-
     return NextResponse.json({ data });
   } catch (error) {
     console.error('파일 읽기 오류:', error);

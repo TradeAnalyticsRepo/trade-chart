@@ -1,8 +1,8 @@
 /**
- * [종목별 일별동향] 컬럼값 기준 타입 명시. 
- * 해당 데이터를 기준으로 차트 생성 
+ * [종목별 일별동향] 컬럼값 기준 타입 명시.
+ * 해당 데이터를 기준으로 차트 생성
  */
-export interface ExcelData  {
+export interface ExcelData {
   tradingVolumeTotalForeAndInst: number;
   tradingVolumeIndiv: number;
   tradingVolumeFore: number;
@@ -30,8 +30,6 @@ export interface ExcelData  {
   // pensionEtc: number; // 연금 등
   // nationalLocal: number; // 국가 및 지방 공공기관
 
-
-
   /** 거래 날짜 */
   tradeDate: string;
   /** 종가 */
@@ -58,7 +56,7 @@ export interface ExcelData  {
   /** 외국인 + 기관분산비율 */
   totalForeAndInstDispersionRatio: number;
   /** 외국인 + 기관주가선도 */
-  totalForeAndInst 
+  totalForeAndInst: number;
 
   /** 외국인매집수량 */
   foreCollectionVolume: number;
@@ -115,10 +113,6 @@ export interface ExcelData  {
   /** 기타법인분산비율 */
   etcDispersionRatio: number;
 }
-
-
-
-
 
 /**
  * 개별 거래 데이터를 나타내는 인터페이스

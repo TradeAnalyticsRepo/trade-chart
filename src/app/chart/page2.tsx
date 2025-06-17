@@ -93,11 +93,12 @@ const ChartIndicator = styled.div<{ color: string }>`
 `;
 
 /**
- * 투자자별 순매수 현황을 보여주는 차트 컴포넌트
+ * 투자자별 매집수량 현황을 보여주는 차트 컴포넌트 (ExcelData 기반)
  */
-export default function ChartPage() {
+export default function ChartPage2() {
   const [showVolume, setShowVolume] = useState<boolean>(false);
   const [data, setData] = useState<TradeData[]>([]);
+  const [excelData, setExcelData] = useState<ExcelData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [toggleTradeMountChart, setToggleTradeMountChart] = useState<boolean>(false);
@@ -129,13 +130,16 @@ export default function ChartPage() {
     };
 
     const getJsonData = async () => {
-      let res = await axios.get(`/api/excel?stockId=11111&type=graph`);
-      res = await res.data;
+      try {
+        let res = await axios.get(`/api/excel?stockId=11111&type=graph`);
+        const excelDataResult: ExcelData[] = res.data.data;
+        setExcelData(excelDataResult);
 
-      const excelData: ExcelData[] = res.data;
-
-      const dates = [...new Set(excelData.map((item) => item.tradeDate))];
-      console.debug('dates:', dates);
+        const dates = [...new Set(excelDataResult.map((item) => item.tradeDate))];
+        console.debug('dates:', dates);
+      } catch (err) {
+        console.error('Excel 데이터 조회 실패:', err);
+      }
     };
 
     getJsonData();
@@ -143,32 +147,77 @@ export default function ChartPage() {
   }, []);
 
   const getChartOption = (investor: string, showVolume: boolean = false) => {
-    const dates = [...new Set(data.map((item) => item.date))];
-    const investorData = data.filter((item) => item.investor === investor);
+    // ExcelData를 사용하여 차트 데이터 생성
+    const dates = excelData.map((item) => item.tradeDate);
 
-    // OHLC 데이터 생성
-    const ohlcData = investorData.map((item) => [Number(item.open_price), Number(item.high_price), Number(item.low_price), Number(item.close_price)]);
+    let collectionData: number[] = [];
+    let tradingVolumeData: number[] = [];
 
-    // 종가 데이터 (선 그래프용)
-    const closePrices = investorData.map((item) => Number(item.close_price));
-    const netAmounts = investorData.map((item) => Number(item.net_amt) / 100000000);
-    const volumes = investorData.map((item) => (Number(item.buy_amt) + Number(item.sell_amt)) / 100000000);
+    switch (investor) {
+      case '개인':
+        collectionData = excelData.map((item) => item.indivCollectionVolume);
+        tradingVolumeData = excelData.map((item) => item.tradingVolumeIndiv);
+        break;
+      case '외국인':
+        collectionData = excelData.map((item) => item.foreCollectionVolume);
+        tradingVolumeData = excelData.map((item) => item.tradingVolumeFore);
+        break;
+      case '기관':
+        collectionData = excelData.map((item) => item.totalInsCollectionVolume);
+        tradingVolumeData = excelData.map((item) => item.tradingVolumeTotalIns);
+        break;
+      case '금융투자':
+        collectionData = excelData.map((item) => item.finInvCollectionVolume);
+        tradingVolumeData = excelData.map((item) => item.tradingVolumeFinInv);
+        break;
+      case '보험':
+        collectionData = excelData.map((item) => item.insurCollectionVolume);
+        tradingVolumeData = excelData.map((item) => item.tradingVolumeInsur);
+        break;
+      case '투신':
+        collectionData = excelData.map((item) => item.trustCollectionVolume);
+        tradingVolumeData = excelData.map((item) => item.tradingVolumeTrust);
+        break;
+      case '은행':
+        collectionData = excelData.map((item) => item.bankCollectionVolume);
+        tradingVolumeData = excelData.map((item) => item.tradingVolumeBank);
+        break;
+      case '연기금':
+        collectionData = excelData.map((item) => item.pensCollectionVolume);
+        tradingVolumeData = excelData.map((item) => item.tradingVolumePens);
+        break;
+      case '사모펀드':
+        collectionData = excelData.map((item) => item.sTrustCollectionVolume);
+        tradingVolumeData = excelData.map((item) => item.tradingVolumeSTrust);
+        break;
+      case '국가':
+        collectionData = excelData.map((item) => item.natCollectionVolume);
+        tradingVolumeData = excelData.map((item) => item.tradingVolumeNat);
+        break;
+      case '기타법인':
+        collectionData = excelData.map((item) => item.etcCollectionVolume);
+        tradingVolumeData = excelData.map((item) => item.tradingVolumeEtc);
+        break;
+      default:
+        collectionData = [];
+        tradingVolumeData = [];
+    }
 
-    // Y축 최소/최대값 계산 (종가 기준)
-    const minPrice = Math.min(...closePrices);
-    const maxPrice = Math.max(...closePrices);
-    const priceRange = maxPrice - minPrice;
-    const yAxisMin = Math.floor(minPrice - priceRange * 0.1);
-    const yAxisMax = Math.ceil(maxPrice + priceRange * 0.1);
+    // Y축 최소/최대값 계산
+    const minValue = Math.min(...collectionData);
+    const maxValue = Math.max(...collectionData);
+    const valueRange = maxValue - minValue;
+    const yAxisMin = Math.floor(minValue - valueRange * 0.1);
+    const yAxisMax = Math.ceil(maxValue + valueRange * 0.1);
 
     const series = showVolume
       ? [
           {
             name: '거래량',
             type: 'bar',
-            data: volumes,
+            data: tradingVolumeData,
             itemStyle: {
-              color: (params: any) => (netAmounts[params.dataIndex] >= 0 ? '#ff4d4f' : '#52c41a'),
+              color: (params: any) => (collectionData[params.dataIndex] >= 0 ? '#ff4d4f' : '#52c41a'),
             },
             opacity: 0.6,
             showSymbol: false,
@@ -179,35 +228,24 @@ export default function ChartPage() {
         ]
       : [
           {
-            name: '주가',
-            type: 'candlestick',
-            data: ohlcData,
-            itemStyle: {
-              color: '#ff4d4f',
-              color0: '#52c41a',
-              borderColor: '#ff4d4f',
-              borderColor0: '#52c41a',
-            },
-          },
-          {
-            name: '종가',
+            name: '매집수량',
             type: 'line',
-            data: closePrices,
+            data: collectionData,
             smooth: true,
             showSymbol: false,
             lineStyle: {
               width: 2,
               color: '#1890ff',
             },
-            z: 1,
+            areaStyle: {
+              opacity: 0.1,
+              color: '#1890ff',
+            },
           },
-          createChartSeries('순매수', 'line', netAmounts, 1, {
-            areaStyle: { opacity: 0.1 },
-          }),
         ];
 
     return {
-      ...createChartOption(showVolume ? `${investor} 거래량` : `${investor} 투자자 순매수 현황`, dates, series),
+      ...createChartOption(showVolume ? `${investor} 거래량` : `${investor} 매집수량`, dates, series),
       backgroundColor: 'transparent',
       grid: {
         left: '5%',
@@ -222,9 +260,6 @@ export default function ChartPage() {
         top: 30,
         textStyle: {
           color: 'var(--foreground)',
-        },
-        selected: {
-          순매수: false,
         },
       },
       dataZoom: [
@@ -267,10 +302,10 @@ export default function ChartPage() {
         ? [
             {
               type: 'value',
-              name: '거래량(억원)',
+              name: '거래량',
               position: 'left',
               axisLabel: {
-                formatter: '{value}억',
+                formatter: '{value}',
                 color: '#fff',
                 margin: 20,
               },
@@ -288,19 +323,12 @@ export default function ChartPage() {
         : [
             {
               type: 'value',
-              name: '종가(원)',
+              name: '매집수량',
               position: 'left',
               min: yAxisMin,
               max: yAxisMax,
               axisLabel: {
-                formatter: (value: number) => {
-                  if (value >= 100000000) {
-                    return (value / 100000000).toFixed(1) + '억';
-                  } else if (value >= 10000) {
-                    return (value / 10000).toFixed(0) + '만';
-                  }
-                  return value.toLocaleString();
-                },
+                formatter: '{value}',
                 color: '#fff',
                 margin: 20,
               },
@@ -312,24 +340,6 @@ export default function ChartPage() {
                 lineStyle: {
                   color: 'rgba(255, 255, 255, 0.1)',
                 },
-              },
-            },
-            {
-              type: 'value',
-              name: '순매수(억원)',
-              position: 'right',
-              offset: 80,
-              axisLabel: {
-                formatter: '{value}억',
-                color: '#fff',
-                margin: 20,
-              },
-              nameTextStyle: {
-                color: '#fff',
-                padding: [0, 40, 0, 0],
-              },
-              splitLine: {
-                show: false,
               },
             },
           ],
@@ -352,23 +362,16 @@ export default function ChartPage() {
           let result = `${formattedDate}<br/>`;
 
           if (!showVolume) {
-            // 캔들 데이터 포맷팅
-            const candleData = params[0].data;
-            result += `시가: ${Number(candleData[0]).toLocaleString()}원<br/>`;
-            result += `고가: ${Number(candleData[1]).toLocaleString()}원<br/>`;
-            result += `저가: ${Number(candleData[2]).toLocaleString()}원<br/>`;
-            result += `종가: ${Number(candleData[3]).toLocaleString()}원<br/>`;
-
-            // 순매수 데이터 포맷팅
-            params.slice(2).forEach((param: any) => {
+            // 매집수량 데이터 포맷팅
+            params.forEach((param: any) => {
               const value = Number(param.value).toLocaleString();
-              result += `${param.seriesName}: ${value}억원<br/>`;
+              result += `${param.seriesName}: ${value}<br/>`;
             });
           } else {
             // 거래량 데이터 포맷팅
             params.forEach((param: any) => {
               const value = Number(param.value).toLocaleString();
-              result += `${param.seriesName}: ${value}억원<br/>`;
+              result += `${param.seriesName}: ${value}<br/>`;
             });
           }
 
@@ -407,7 +410,7 @@ export default function ChartPage() {
 
   return (
     <ChartContainer>
-      {/* <ChartTitle>투자자별 순매수 현황</ChartTitle> */}
+      <ChartTitle>투자자별 매집수량 현황 (ExcelData 기반)</ChartTitle>
       <ToggleButton
         onClick={() => {
           setToggleTradeMountChart(!toggleTradeMountChart);
@@ -430,13 +433,62 @@ export default function ChartPage() {
 
       {/* 전체 차트 섹션 */}
       <ChartSection>
-        {/* <SectionTitle>전체 투자자 현황</SectionTitle> */}
         <AllChartsContainer>
+          {/* 주요 투자자 그룹 */}
+          <SectionTitle>주요 투자자</SectionTitle>
           {['개인', '외국인', '기관'].map((investor) => (
             <InvestorChartContainer key={investor}>
               <ChartLabel>
                 <ChartIndicator color='#1890ff' />
                 {investor} 투자자
+              </ChartLabel>
+              <ChartWrapper>
+                <ReactECharts
+                  option={getChartOption(investor)}
+                  style={{ height: '300px', width: '100%' }}
+                />
+
+                {toggleTradeMountChart && (
+                  <ReactECharts
+                    option={getChartOption(investor, true)}
+                    style={{ height: '200px', width: '100%' }}
+                  />
+                )}
+              </ChartWrapper>
+            </InvestorChartContainer>
+          ))}
+
+          {/* 기관 세부 분류 */}
+          <SectionTitle>기관 세부 분류</SectionTitle>
+          {['금융투자', '보험', '투신', '은행', '연기금', '사모펀드'].map((investor) => (
+            <InvestorChartContainer key={investor}>
+              <ChartLabel>
+                <ChartIndicator color='#52c41a' />
+                {investor}
+              </ChartLabel>
+              <ChartWrapper>
+                <ReactECharts
+                  option={getChartOption(investor)}
+                  style={{ height: '300px', width: '100%' }}
+                />
+
+                {toggleTradeMountChart && (
+                  <ReactECharts
+                    option={getChartOption(investor, true)}
+                    style={{ height: '200px', width: '100%' }}
+                  />
+                )}
+              </ChartWrapper>
+            </InvestorChartContainer>
+          ))}
+
+          {/* 기타 투자자 */}
+          <SectionTitle>기타 투자자</SectionTitle>
+          {['국가', '기타법인'].map((investor) => (
+            <InvestorChartContainer key={investor}>
+              <ChartLabel>
+                <ChartIndicator color='#faad14' />
+                {investor}
               </ChartLabel>
               <ChartWrapper>
                 <ReactECharts
