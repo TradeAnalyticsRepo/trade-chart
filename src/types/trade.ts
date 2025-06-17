@@ -40,67 +40,89 @@ export interface ExcelData {
   /** 개인주가선도 */
   indivStockMomentum: number;
 
-  /** 외국인 + 기관매집수량 */
+ /** 외국인 + 기관매집수량 */
   totalForeAndInstCollectionVolume: number;
   /** 외국인 + 기관분산비율 */
   totalForeAndInstDispersionRatio: number;
   /** 외국인 + 기관주가선도 */
-  totalForeAndInst: number;
+  totalForeAndInstStockMomentum: number;
 
   /** 외국인매집수량 */
   foreCollectionVolume: number;
   /** 외국인분산비율 */
   foreDispersionRatio: number;
+  /** 외국인주가선도 */
+  foreStockMomentum: number;
 
   /** 기관종합매집수량 */
   totalInsCollectionVolume: number;
   /** 기관종합분산비율 */
   totalInsDispersionRatio: number;
+  /** 기관종합주가선도 */
+  totalInsStockMomentum: number;
 
   /** 금융투자(기관)매집수량 */
   finInvCollectionVolume: number;
   /** 금융투자(기관)분산비율 */
   finInvDispersionRatio: number;
+  /** 금융투자(기관)주가선도 */
+  finInvStockMomentum: number;
 
   /** 보험매집수량 */
   insurCollectionVolume: number;
   /** 보험분산비율 */
   insurDispersionRatio: number;
+  /** 보험주가선도 */
+  insurStockMomentum: number;
 
   /** 투신(일반 + 특수)매집수량 */
   trustCollectionVolume: number;
   /** 투신(일반 + 특수)분산비율 */
   trustDispersionRatio: number;
+  /** 투신(일반 + 특수)주가선도 */
+  trustStockMomentum: number;
 
   /** 기타금융매집수량 */
   etcFinCollectionVolume: number;
   /** 기타금융분산비율 */
   etcFinDispersionRatio: number;
+  /** 기타금융주가선도 */
+  etcFinStockMomentum: number;
 
   /** 은행매집수량 */
   bankCollectionVolume: number;
   /** 은행분산비율 */
   bankDispersionRatio: number;
+  /** 은행주가선도 */
+  bankStockMomentum: number;
 
   /** 연기금매집수량 */
   pensCollectionVolume: number;
   /** 연기금분산비율 */
   pensDispersionRatio: number;
+  /** 연기금주가선도 */
+  pensStockMomentum: number;
 
   /** 사모펀드매집수량 */
   sTrustCollectionVolume: number;
   /** 사모펀드분산비율 */
   sTrustDispersionRatio: number;
+  /** 사모펀드주가선도 */
+  sTrustStockMomentum: number;
 
   /** 국가매집수량 */
   natCollectionVolume: number;
   /** 국가분산비율 */
   natDispersionRatio: number;
+  /** 국가주가선도 */
+  natStockMomentum: number;
 
   /** 기타법인매집수량 */
   etcCollectionVolume: number;
   /** 기타법인분산비율 */
   etcDispersionRatio: number;
+  /** 기타법인주가선도 */
+  etcStockMomentum: number;
 }
 
 /**

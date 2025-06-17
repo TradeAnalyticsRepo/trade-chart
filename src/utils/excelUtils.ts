@@ -182,6 +182,7 @@ export const processingExcelData = (data: originalExcelFile[], cumulativeStockDa
         etcFinCollectionVolume : cumulativeStockData.cumulativeEtcFinMount - cumulativeStockData.minEtcFinMount,
         bankCollectionVolume : cumulativeStockData.cumulativeBankMount - cumulativeStockData.minBankMount,
         pensCollectionVolume : cumulativeStockData. cumulativePensMount - cumulativeStockData.minPensMount,
+        gTrustCollectionVolume : cumulativeStockData.cumulativeGTrustMount - cumulativeStockData.minGTrustMount,
         sTrustCollectionVolume : cumulativeStockData.cumulativeSTrustMount - cumulativeStockData.minSTrustMount,
         natCollectionVolume : cumulativeStockData.cumulativeNatMount - cumulativeStockData.minNatMount,
         etcCollectionVolume : cumulativeStockData.cumulativeEtcMount - cumulativeStockData.minEtcMount,
@@ -193,53 +194,81 @@ export const processingExcelData = (data: originalExcelFile[], cumulativeStockDa
 
     data.forEach(item => {
         if(!item.일자) return;
+        let sumTotalCollectionVolume = 0;
         Object.entries(excelEnum).forEach(([key, value]) => {
             if(value === 'Trust') {
                 volume.trustCollectionVolume += (item.__EMPTY_1 + item.__EMPTY_2);
             } else if (value === 'TotalForeAndInst') {
                 volume.totalForeAndInstCollectionVolume += (item.외국인 + item.기관종합);
             } else {
-                volume[`${value.toLowerCase()}CollectionVolume`] += item[key];
+                volume[`${toCamel(value)}CollectionVolume`] += item[key];
+                sumTotalCollectionVolume += volume[`${toCamel(value)}CollectionVolume`];
             }
         });
 
-        const data:ExcelData = {
+        const dayValue: ExcelData = {
             tradeDate: item.일자,
             endMount: item.종가,
             previousDayComparison: item.__EMPTY,
             tradingVolume: item.거래량,
+            tradingVolumeIndiv: item.개인 ,
+            tradingVolumeTotalForeAndInst: item.외국인 + item.기관종합 ,
+            tradingVolumeFore: item.외국인 ,
+            tradingVolumeTotalIns: item.기관종합 ,
+            tradingVolumeFinInv: item.기관 ,
+            tradingVolumeEtc: item.기타 ,
+            tradingVolumeTrust: item.__EMPTY_1 + item.__EMPTY_2 ,
+            tradingVolumeSTrust: item.__EMPTY_2 ,
+            tradingVolumeBank: item.__EMPTY_3 ,
+            tradingVolumeInsur: item.__EMPTY_4 ,
+            tradingVolumeEtcFin: item.__EMPTY_5 ,
+            tradingVolumePens: item.__EMPTY_6 ,
+            tradingVolumeNat: item.__EMPTY_7 ,
+
             indivCollectionVolume: volume.indivCollectionVolume,
             indivDispersionRatio: calcPercent(volume.indivCollectionVolume, ( cumulativeStockData.maxIndivMount - cumulativeStockData.minIndivMount )),
+            indivStockMomentum: calcPercent(volume.indivCollectionVolume, sumTotalCollectionVolume),
             totalForeAndInstCollectionVolume: volume.totalForeAndInstCollectionVolume,
-            totalForeAndInstDispersionRatio: calcPercent(volume.totalForeAndInstCollectionVolume, ( cumulativeStockData.maxTotalForeAndInstMount - cumulativeStockData.minTotalForeAndInstMount)),
+            totalForeAndInstDispersionRatio: calcPercent(volume.totalForeAndInstCollectionVolume, ( cumulativeStockData.maxTotalForeAndInstMount - cumulativeStockData.
+            minTotalForeAndInstMount)),
+            totalForeAndInstStockMomentum: calcPercent(volume.totalForeAndInstCollectionVolume, sumTotalCollectionVolume),
             foreCollectionVolume: volume.foreCollectionVolume,
             foreDispersionRatio: calcPercent(volume.foreCollectionVolume, (cumulativeStockData.maxForeMount - cumulativeStockData.minForeMount)),
+            foreStockMomentum: calcPercent(volume.foreCollectionVolume, sumTotalCollectionVolume),
             totalInsCollectionVolume: volume.totalInsCollectionVolume,
             totalInsDispersionRatio: calcPercent(volume.totalInsCollectionVolume, (cumulativeStockData.maxTotalInsMount - cumulativeStockData.minTotalInsMount)),
+            totalInsStockMomentum: calcPercent(volume.totalInsCollectionVolume, sumTotalCollectionVolume),
             finInvCollectionVolume: volume.finInvCollectionVolume,
             finInvDispersionRatio: calcPercent(volume.finInvCollectionVolume, (cumulativeStockData.maxFinInvMount - cumulativeStockData.minFinInvMount)), 
+            finInvStockMomentum: calcPercent(volume.finInvCollectionVolume, sumTotalCollectionVolume),
             insurCollectionVolume: volume.insurCollectionVolume, 
             insurDispersionRatio: calcPercent(volume.insurCollectionVolume, (cumulativeStockData.maxInsurMount - cumulativeStockData.minInsurMount)),
+            insurStockMomentum: calcPercent(volume.insurCollectionVolume, sumTotalCollectionVolume),
             trustCollectionVolume: volume.trustCollectionVolume,
             trustDispersionRatio: calcPercent(volume.trustCollectionVolume, (cumulativeStockData.maxTrustMount - cumulativeStockData.minTrustMount)),
+            trustStockMomentum: calcPercent(volume.trustCollectionVolume, sumTotalCollectionVolume),
             etcFinCollectionVolume: volume.etcFinCollectionVolume,
             etcFinDispersionRatio: calcPercent(volume.etcFinCollectionVolume, (cumulativeStockData.maxEtcFinMount - cumulativeStockData.minEtcFinMount)),
+            etcFinStockMomentum: calcPercent(volume.etcFinCollectionVolume, sumTotalCollectionVolume),
             bankCollectionVolume: volume.bankCollectionVolume,
             bankDispersionRatio: calcPercent(volume.bankCollectionVolume, (cumulativeStockData.maxBankMount - cumulativeStockData.minBankMount)),
+            bankStockMomentum: calcPercent(volume.bankCollectionVolume, sumTotalCollectionVolume),
             pensCollectionVolume: volume.pensCollectionVolume,
             pensDispersionRatio: calcPercent(volume.pensCollectionVolume, (cumulativeStockData.maxPensMount - cumulativeStockData.minPensMount)),
+            pensStockMomentum: calcPercent(volume.pensCollectionVolume, sumTotalCollectionVolume),
             sTrustCollectionVolume: volume.sTrustCollectionVolume,
             sTrustDispersionRatio: calcPercent(volume.sTrustCollectionVolume, (cumulativeStockData.maxSTrustMount - cumulativeStockData.minSTrustMount)),
+            sTrustStockMomentum: calcPercent(volume.sTrustCollectionVolume, sumTotalCollectionVolume),
             natCollectionVolume: volume.natCollectionVolume,
             natDispersionRatio: calcPercent(volume.natCollectionVolume, (cumulativeStockData.maxNatMount - cumulativeStockData.minNatMount)),
+            natStockMomentum: calcPercent(volume.natCollectionVolume, sumTotalCollectionVolume),
             etcCollectionVolume: volume.etcCollectionVolume,
             etcDispersionRatio: calcPercent(volume.etcCollectionVolume, (cumulativeStockData.maxEtcMount - cumulativeStockData.minEtcMount)),
-
-            indivStockMomentum: calcPercent(volume.indivCollectionVolume, (volume.indivCollectionVolume + volume.totalForeAndInstCollectionVolume + volume.totalInsCollectionVolume + volume.foreCollectionVolume + volume.totalInsCollectionVolume + volume.finInvCollectionVolume + volume.insurCollectionVolume + volume.trustCollectionVolume + volume.etcFinCollectionVolume + volume.bankCollectionVolume + volume.pensCollectionVolume + volume.natCollectionVolume + volume.etcCollectionVolume)),
+            etcStockMomentum: calcPercent(volume.etcCollectionVolume, sumTotalCollectionVolume),
             
         };
 
-        result.push(data);
+        result.push(dayValue);
     });
 
     return result;
@@ -251,4 +280,4 @@ export const processingExcelData2 = (data: originalExcelFile) => {
 }
 
 const calcPercent = (num1: number, num2: number) => Math.round(num1 / num2 * 100);
-
+const toCamel = (str: string) => str[0].toLowerCase() + str.slice(1);
