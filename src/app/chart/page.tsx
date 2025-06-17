@@ -7,8 +7,19 @@ import { ExcelData, TradeData } from '@/types/trade';
 import { fetchTradeData, getApi } from '@/utils/api';
 import { createChartSeries } from '@/utils/chartUtils';
 import { handleExcel } from '@/utils/excelUtils';
+import {
+  createCommonChartOptions,
+  createLineSeries,
+  calculateYAxisRange,
+  extractInvestorData,
+  extractDispersionRatio,
+  getInvestorColor,
+  InvestorType,
+  INVESTOR_COLORS,
+} from '@/utils/chartConfig';
 import axios from 'axios';
-import { json } from 'stream/consumers';
+
+// ===== 스타일 컴포넌트 =====
 
 const ToggleButton = styled.button`
   width: 80px;
@@ -95,18 +106,44 @@ const ChartIndicator = styled.div<{ color: string }>`
 
 /**
  * 투자자별 순매수 현황을 보여주는 차트 컴포넌트
+ *
+ * 주요 기능:
+ * - 개인/외국인/기관 투자자 매집수량 통합 차트
+ * - 각 투자자별 개별 차트
+ * - 동적 줌 및 날짜 표시 간격 조정
+ * - ECharts legend를 통한 그래프 온오프 기능
  */
 export default function ChartPage() {
+  // ===== 상태 관리 =====
+
+  /** Excel에서 가져온 투자자별 매집수량 데이터 */
   const [jsonData, setJsonData] = useState<ExcelData[]>([]);
+
+  /** 거래량 표시 여부 (현재 미사용) */
   const [showVolume, setShowVolume] = useState<boolean>(false);
+
+  /** API에서 가져온 거래 데이터 (현재 미사용) */
   const [data, setData] = useState<TradeData[]>([]);
+
+  /** 데이터 로딩 상태 */
   const [isLoading, setIsLoading] = useState(false);
+
+  /** 에러 메시지 */
   const [error, setError] = useState<string | null>(null);
+
+  /** 거래량 차트 토글 상태 (현재 미사용) */
   const [toggleTradeMountChart, setToggleTradeMountChart] = useState<boolean>(false);
 
+  /** 엑셀 파일 업로드 input 참조 */
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // ===== 데이터 로딩 =====
+
   useEffect(() => {
+    /**
+     * API에서 거래 데이터를 가져오는 함수
+     * 현재는 1년치 데이터를 가져옴
+     */
     const fetchData = async () => {
       setIsLoading(true);
       setError(null);
@@ -131,6 +168,10 @@ export default function ChartPage() {
       }
     };
 
+    /**
+     * Excel 데이터를 API에서 가져오는 함수
+     * 차트용 데이터를 가져옴
+     */
     const getJsonData = async () => {
       let res = await axios.get(`/api/excel?stockId=11111&type=graph`);
       res = await res.data;
@@ -143,197 +184,159 @@ export default function ChartPage() {
     getJsonData();
     fetchData();
   }, []);
-  const getTestChart = (investor: string, showVolume: boolean = false) => {
-    // ExcelData를 날짜순으로 정렬 (최신이 뒤로)
+
+  // ===== 데이터 전처리 =====
+
+  /**
+   * 공통 데이터 전처리 함수
+   * @returns 정렬된 데이터와 날짜 배열
+   */
+  const getProcessedData = () => {
+    /** 날짜순으로 정렬된 데이터 (최신이 뒤로) */
     const sortedData = jsonData.sort((a, b) => a.tradeDate.localeCompare(b.tradeDate));
+
+    /** 차트 X축에 사용할 날짜 배열 */
     const dates = sortedData.map((item) => item.tradeDate);
 
     console.debug('dates length:', dates.length);
     console.debug('last date:', dates[dates.length - 1]);
 
-    // 개인 매집수량 데이터
-    const collectionData = sortedData.map((item) => item.indivCollectionVolume);
+    return { sortedData, dates };
+  };
 
-    // Y축 최소/최대값 계산
-    const minValue = Math.min(...collectionData);
-    const maxValue = Math.max(...collectionData);
-    const valueRange = maxValue - minValue;
-    const yAxisMin = Math.floor(minValue - valueRange * 0.1);
-    const yAxisMax = Math.ceil(maxValue + valueRange * 0.1);
+  // ===== 투자자별 차트 설정 =====
 
-    // 최초 줌 상태를 전체 데이터로 설정
+  /** 투자자별 차트 설정 배열 */
+  const investorChartConfigs = [
+    {
+      key: '통합',
+      label: '개인/외국인/기관 투자자',
+      color: INVESTOR_COLORS.개인,
+      types: ['개인', '외국인', '기관'] as InvestorType[],
+      title: '개인/외국인/기관 투자자 매집수량',
+      height: '300px',
+    },
+    {
+      key: '개인',
+      label: '개인 투자자',
+      color: INVESTOR_COLORS.개인,
+      types: ['개인'] as InvestorType[],
+      title: '개인 투자자 매집수량',
+      height: '250px',
+    },
+    {
+      key: '외국인',
+      label: '외국인 투자자',
+      color: INVESTOR_COLORS.외국인,
+      types: ['외국인'] as InvestorType[],
+      title: '외국인 투자자 매집수량',
+      height: '250px',
+    },
+    {
+      key: '기관',
+      label: '기관 투자자',
+      color: INVESTOR_COLORS.기관,
+      types: ['기관'] as InvestorType[],
+      title: '기관 투자자 매집수량',
+      height: '250px',
+    },
+  ];
+
+  // ===== 차트 생성 함수들 =====
+
+  /**
+   * 통합 차트 생성 함수
+   * 개별 투자자 차트와 통합 차트를 모두 처리할 수 있는 범용 함수
+   *
+   * @param investorTypes - 표시할 투자자 유형 배열 (빈 배열이면 모든 투자자 표시)
+   * @param title - 차트 제목
+   * @param height - 차트 높이 (기본값: '250px')
+   * @returns ECharts 옵션 객체
+   */
+  const createInvestorChart = (investorTypes: InvestorType[] = [], title: string = '투자자 매집수량', height: string = '250px') => {
+    const { sortedData, dates } = getProcessedData();
+
+    // ===== 투자자별 매집수량 데이터 추출 =====
+
+    /** 표시할 투자자 유형 결정 (빈 배열이면 모든 투자자) */
+    const typesToShow: InvestorType[] = investorTypes.length > 0 ? investorTypes : ['개인', '외국인', '기관'];
+
+    /** 각 투자자별 데이터 배열 */
+    const allData = typesToShow.map((type) => extractInvestorData(sortedData, type));
+
+    // ===== Y축 범위 계산 =====
+
+    /** Y축 범위 계산 */
+    const yAxisRange = calculateYAxisRange(allData);
+
+    // ===== 줌 설정 =====
+
+    /** 줌 시작 위치 (0 = 전체 데이터 시작) */
     const zoomStart = 0;
+
+    /** 줌 끝 위치 (100 = 전체 데이터 끝) */
     const zoomEnd = 100;
 
-    const series = [
-      {
-        name: '개인 매집수량',
-        type: 'line',
-        data: collectionData,
-        smooth: true,
-        showSymbol: false,
-        lineStyle: {
-          width: 2,
-          color: '#1890ff',
-        },
-        areaStyle: {
-          opacity: 0.1,
-          color: '#1890ff',
-        },
-      },
-    ];
+    // ===== 차트 시리즈 데이터 =====
 
+    /** 차트에 표시할 시리즈 배열 */
+    const series = typesToShow.map((type) => createLineSeries(`${type} 매집수량`, extractInvestorData(sortedData, type), getInvestorColor(type)));
+
+    // ===== 범례 데이터 =====
+
+    /** 범례 데이터 (개별 차트일 때는 범례 없음) */
+    const legendData = typesToShow.length > 1 ? typesToShow.map((type) => `${type} 매집수량`) : undefined;
+
+    // ===== 공통 차트 옵션 생성 =====
+
+    /** 기본 차트 옵션 */
+    const baseOptions = createCommonChartOptions(title, dates, zoomStart, zoomEnd, yAxisRange, legendData, {
+      showSlider: false, // 슬라이더 숨기기 (마우스 휠 줌만 사용)
+      showInsideZoom: true, // 마우스 휠 줌 활성화
+      gridBottom: '25%', // 슬라이더 없을 때 하단 여백 늘리기
+    });
+
+    // ===== 툴팁 커스터마이징 =====
+
+    /** 커스텀 툴팁 포맷터 */
+    const customTooltipFormatter = (params: any) => {
+      const date = params[0].axisValue;
+      const dataIndex = dates.indexOf(date);
+      const data = sortedData[dataIndex];
+
+      let result = `${date}<br/>`;
+
+      // ===== 각 투자자별 정보 추가 =====
+      params.forEach((param: any) => {
+        const seriesName = param.seriesName;
+        const investorType = seriesName.replace(' 매집수량', '');
+
+        result += `${seriesName}: ${Number(param.value).toLocaleString()}<br/>`;
+
+        /** 투자자 타입에 따른 분산비율 추출 */
+        const dispersionRatio = extractDispersionRatio(data, investorType);
+        result += `${investorType} 분산비율: ${dispersionRatio}%<br/>`;
+      });
+
+      /** 공통 정보 */
+      result += `종가: ${Number(data.endMount).toLocaleString()}원<br/>`;
+      result += `전일대비: ${data.previousDayComparison}%<br/>`;
+
+      return result;
+    };
+
+    // ===== 최종 차트 옵션 반환 =====
     return {
-      title: {
-        text: '개인 투자자 매집수량',
-        left: 'center',
-        textStyle: {
-          color: 'var(--foreground)',
-        },
-      },
-      backgroundColor: 'transparent',
-      grid: {
-        left: '5%',
-        right: '8%',
-        bottom: '15%',
-        top: '15%',
-        containLabel: true,
-      },
-      dataZoom: [
-        {
-          type: 'inside',
-          start: zoomStart,
-          end: zoomEnd,
-        },
-        {
-          type: 'slider',
-          start: zoomStart,
-          end: zoomEnd,
-          bottom: '5%',
-          height: 20,
-          borderColor: 'rgba(255, 255, 255, 0.2)',
-          fillerColor: 'rgba(255, 255, 255, 0.1)',
-          handleStyle: {
-            color: '#1890ff',
-          },
-          textStyle: {
-            color: '#fff',
-          },
-        },
-      ],
-      xAxis: {
-        type: 'category',
-        data: dates,
-        axisLabel: {
-          color: '#fff',
-          formatter: (value: string) => {
-            const date = new Date(value);
-            const year = date.getFullYear();
-            const month = date.getMonth() + 1;
-            const day = date.getDate();
-
-            return `${year}/${month}/${day}`;
-          },
-          interval: (index: number, value: string) => {
-            // 전체 데이터 개수
-            const totalDataCount = dates.length;
-
-            // 현재 표시되는 데이터 개수를 추정 (줌 레벨에 따라)
-            const zoomRange = zoomEnd - zoomStart;
-            const estimatedVisibleCount = Math.ceil((zoomRange / 100) * totalDataCount);
-
-            // 최초 로드 시 (전체 데이터 보기) - 마지막과 최신 일자는 항상 표시
-            if (zoomRange >= 95) {
-              // 전체 데이터가 보일 때는 간격을 더 크게
-              if (index % 50 === 0 || index === 0 || index === totalDataCount - 1) {
-                return true;
-              }
-              return false;
-            }
-
-            // 확대된 상태에 따라 간격 조정
-            if (estimatedVisibleCount <= 15) {
-              // 15개 이하일 때 (매우 확대된 상태) - 모든 날짜 표시
-              return true;
-            } else if (estimatedVisibleCount <= 30) {
-              // 30개 이하일 때 - 3개마다 표시
-              return index % 3 === 0;
-            } else if (estimatedVisibleCount <= 60) {
-              // 60개 이하일 때 - 5개마다 표시
-              return index % 5 === 0;
-            } else if (estimatedVisibleCount <= 120) {
-              // 120개 이하일 때 - 10개마다 표시
-              return index % 10 === 0;
-            } else if (estimatedVisibleCount <= 300) {
-              // 300개 이하일 때 - 20개마다 표시
-              return index % 20 === 0;
-            } else {
-              // 300개 초과일 때 - 50개마다 표시하되, 마지막과 최신 일자는 항상 표시
-              return index % 50 === 0 || index === 0 || index === totalDataCount - 1;
-            }
-          },
-          rotate: 45,
-          margin: 15,
-        },
-        axisLine: {
-          lineStyle: {
-            color: '#fff',
-          },
-        },
-        axisTick: {
-          show: false,
-        },
-      },
-      yAxis: {
-        type: 'value',
-        name: '매집수량',
-        position: 'left',
-        min: yAxisMin,
-        max: yAxisMax,
-        axisLabel: {
-          formatter: '{value}',
-          color: '#fff',
-          margin: 20,
-        },
-        nameTextStyle: {
-          color: '#fff',
-          padding: [0, 0, 0, 40],
-        },
-        splitLine: {
-          lineStyle: {
-            color: 'rgba(255, 255, 255, 0.1)',
-          },
-        },
-      },
+      ...baseOptions,
       tooltip: {
-        trigger: 'axis',
-        axisPointer: {
-          type: 'cross',
-          lineStyle: {
-            color: 'rgba(255, 255, 255, 0.2)',
-          },
-        },
-        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-        borderColor: 'rgba(255, 255, 255, 0.2)',
-        textStyle: {
-          color: '#fff',
-        },
-        formatter: (params: any) => {
-          const date = params[0].axisValue;
-          const dataIndex = dates.indexOf(date);
-          const data = sortedData[dataIndex];
-
-          let result = `${date}<br/>`;
-          result += `매집수량: ${Number(params[0].value).toLocaleString()}<br/>`;
-          result += `종가: ${Number(data.endMount).toLocaleString()}원<br/>`;
-          result += `전일대비: ${data.previousDayComparison}%<br/>`;
-
-          return result;
-        },
+        ...baseOptions.tooltip,
+        formatter: customTooltipFormatter,
       },
-      series: series,
+      series,
     };
   };
+
+  // ===== 로딩 상태 처리 =====
 
   if (isLoading) {
     return (
@@ -342,6 +345,8 @@ export default function ChartPage() {
       </ChartContainer>
     );
   }
+
+  // ===== 에러 상태 처리 =====
 
   if (error) {
     return (
@@ -352,7 +357,12 @@ export default function ChartPage() {
     );
   }
 
-  // 엑셀업로드 버튼 클릭 시 엑셀데이터 업로드
+  // ===== 이벤트 핸들러 =====
+
+  /**
+   * 엑셀 파일 업로드 처리 함수
+   * @param e - 파일 input change 이벤트
+   */
   const handleExcelUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     try {
       const file = e.target.files?.[0];
@@ -362,9 +372,11 @@ export default function ChartPage() {
     } catch (err) {}
   };
 
+  // ===== 렌더링 =====
+
   return (
     <ChartContainer>
-      {/* <ChartTitle>투자자별 순매수 현황</ChartTitle> */}
+      {/* ===== 상단 버튼 영역 ===== */}
       <ToggleButton
         onClick={() => {
           setToggleTradeMountChart(!toggleTradeMountChart);
@@ -385,29 +397,23 @@ export default function ChartPage() {
         />
       </ToggleButton>
 
-      {/* 전체 차트 섹션 */}
+      {/* ===== 차트 섹션 ===== */}
       <ChartSection>
-        {/* <SectionTitle>전체 투자자 현황</SectionTitle> */}
         <AllChartsContainer>
-          <InvestorChartContainer key={''}>
-            <ChartLabel>
-              <ChartIndicator color='#1890ff' />
-              개인 투자자
-            </ChartLabel>
-            <ChartWrapper>
-              <ReactECharts
-                option={getTestChart('개인', false)}
-                style={{ height: '300px', width: '100%' }}
-              />
-
-              {/* {toggleTradeMountChart && (
+          {investorChartConfigs.map((config) => (
+            <InvestorChartContainer key={config.key}>
+              <ChartLabel>
+                <ChartIndicator color={config.color} />
+                {config.label}
+              </ChartLabel>
+              <ChartWrapper>
                 <ReactECharts
-                  option={getChartOption(investor, true)}
-                  style={{ height: '200px', width: '100%' }}
+                  option={createInvestorChart(config.types, config.title, config.height)}
+                  style={{ height: config.height, width: '100%' }}
                 />
-              )} */}
-            </ChartWrapper>
-          </InvestorChartContainer>
+              </ChartWrapper>
+            </InvestorChartContainer>
+          ))}
         </AllChartsContainer>
       </ChartSection>
     </ChartContainer>
