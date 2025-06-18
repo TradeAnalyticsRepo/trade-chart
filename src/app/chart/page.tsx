@@ -193,10 +193,11 @@ export default function ChartPage() {
    */
   const getProcessedData = () => {
     /** 날짜순으로 정렬된 데이터 (최신이 뒤로) */
-    const sortedData = jsonData.sort((a, b) => a.tradeDate.localeCompare(b.tradeDate));
+    // const sortedData = jsonData.sort((a, b) => a.tradeDate.localeCompare(b.tradeDate));
+    const sortedData = jsonData
 
     /** 차트 X축에 사용할 날짜 배열 */
-    const dates = sortedData.map((item) => item.tradeDate);
+    const dates = sortedData.map((item) => item.tradeDate).sort((a, b) => a.localeCompare(b));
 
     console.debug('dates length:', dates.length);
     console.debug('last date:', dates[dates.length - 1]);
@@ -377,12 +378,12 @@ export default function ChartPage() {
   return (
     <ChartContainer>
       {/* ===== 상단 버튼 영역 ===== */}
-      <ToggleButton
+      {/* <ToggleButton
         onClick={() => {
           setToggleTradeMountChart(!toggleTradeMountChart);
         }}>
         거래량
-      </ToggleButton>
+      </ToggleButton> */}
       <ToggleButton
         onClick={() => {
           fileInputRef.current?.click();
