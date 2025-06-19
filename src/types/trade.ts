@@ -1,3 +1,39 @@
+// 이것도 맞춰보자 
+export interface ExcelData__ {
+  /** 거래 날짜 */
+  tradeDate: string;
+  /** 종가 */
+  endMount: number;
+  /** 전일 대비 */
+  previousDayComparison: number;
+  /** 거래량 */
+  tradingVolume: number;
+  /** 상관계수 */
+  stockCorrelation: number;
+  /** 개인매집수량 */
+  collectionVolume: number;
+  /** 개인분산비율 */
+  dispersionRatio: number;
+  /** 개인주가선도 */
+  stockMomentum: number;
+}
+
+// title 맘에 안들면 수정 ㄱㄱㄱㄱ
+export interface ChartData {
+  개인: ExcelData__;
+  외국인: ExcelData__;
+  투신_일반: ExcelData__;
+  투신_특수: ExcelData__;
+  기타금융: ExcelData__;
+  은행: ExcelData__;
+  연기금: ExcelData__;
+  사모펀드: ExcelData__;
+  국가매집: ExcelData__;
+  기타법인: ExcelData__;
+}
+
+
+
 /**
  * [종목별 일별동향] 컬럼값 기준 타입 명시.
  * 해당 데이터를 기준으로 차트 생성
