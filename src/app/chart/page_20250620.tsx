@@ -141,6 +141,34 @@ export default function ChartPage() {
 
   useEffect(() => {
     /**
+     * API에서 거래 데이터를 가져오는 함수
+     * 현재는 1년치 데이터를 가져옴
+     */
+    const fetchData = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const endDate = new Date();
+        const startDate = new Date();
+        startDate.setFullYear(startDate.getFullYear() - 1);
+
+        const formattedStartDate = startDate.toISOString().slice(0, 10).replace(/-/g, '');
+        const formattedEndDate = endDate.toISOString().slice(0, 10).replace(/-/g, '');
+
+        const tradeData = await fetchTradeData(formattedStartDate, formattedEndDate);
+        console.debug('tradeData:', tradeData);
+
+        getApi();
+        setData(tradeData);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : '데이터를 불러오는 중 오류가 발생했습니다.');
+        console.error('데이터 조회 실패:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    /**
      * Excel 데이터를 API에서 가져오는 함수
      * 차트용 데이터를 가져옴
      */
@@ -152,7 +180,9 @@ export default function ChartPage() {
 
       setJsonData(excelData);
     };
+
     getJsonData();
+    fetchData();
   }, []);
 
   // ===== 데이터 전처리 =====
