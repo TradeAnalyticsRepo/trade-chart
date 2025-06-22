@@ -1,12 +1,9 @@
-'use client';
+"use client";
 
-import ReactECharts from 'echarts-for-react';
-import { useEffect, useRef, useState } from 'react';
-import styled from '@emotion/styled';
-import { ExcelData, TradeData } from '@/types/trade';
-import { fetchTradeData, getApi } from '@/utils/api';
-import { createChartSeries } from '@/utils/chartUtils';
-import { handleExcel } from '@/utils/excelUtils';
+import ReactECharts from "echarts-for-react";
+import { useEffect, useRef, useState } from "react";
+import { ExcelData, TradeData } from "@/types/trade";
+import { handleExcel } from "@/utils/excelUtils";
 import {
   createCommonChartOptions,
   createLineSeries,
@@ -16,93 +13,22 @@ import {
   getInvestorColor,
   InvestorType,
   INVESTOR_COLORS,
-} from '@/utils/chartConfig';
-import axios from 'axios';
+} from "@/utils/chartConfig";
+import axios from "axios";
+import {
+  AllChartsContainer,
+  ChartContainer,
+  ChartIndicator,
+  ChartLabel,
+  ChartSection,
+  ChartTitle,
+  ChartWrapper,
+  InvestorChartContainer,
+  ToggleButton,
+} from "@/ui/ui";
+import ExcelUploadButton from "@/components/ExcelUploadButton";
 
 // ===== 스타일 컴포넌트 =====
-
-const ToggleButton = styled.button`
-  width: 80px;
-`;
-
-const ChartContainer = styled.div`
-  width: 100%;
-  min-height: 100vh;
-  padding: 2rem;
-  background-color: var(--background);
-  display: flex;
-  flex-direction: column;
-  gap: 3rem;
-`;
-
-const ChartWrapper = styled.div`
-  width: 100%;
-  background-color: var(--background);
-  border: 1px solid var(--foreground);
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s ease;
-
-  &:hover {
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
-  }
-`;
-
-const ChartTitle = styled.h1`
-  text-align: center;
-  margin-bottom: 2rem;
-  color: var(--foreground);
-  font-size: 2rem;
-  font-weight: 600;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
-`;
-
-const AllChartsContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
-  margin-bottom: 2rem;
-`;
-
-const ChartSection = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-`;
-
-const SectionTitle = styled.h2`
-  color: var(--foreground);
-  font-size: 1.5rem;
-  font-weight: 600;
-  margin: 0;
-  padding: 0 1rem;
-  border-left: 4px solid var(--foreground);
-`;
-
-const InvestorChartContainer = styled.div`
-  display: flex;
-  width: 100%;
-  flex-direction: column;
-  gap: 1rem;
-`;
-
-const ChartLabel = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0.5rem;
-  color: var(--foreground);
-  font-size: 1.1rem;
-  font-weight: 500;
-`;
-
-const ChartIndicator = styled.div<{ color: string }>`
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background-color: ${(props) => props.color};
-`;
 
 /**
  * 투자자별 순매수 현황을 보여주는 차트 컴포넌트
@@ -119,23 +45,11 @@ export default function ChartPage() {
   /** Excel에서 가져온 투자자별 매집수량 데이터 */
   const [jsonData, setJsonData] = useState<ExcelData[]>([]);
 
-  /** 거래량 표시 여부 (현재 미사용) */
-  const [showVolume, setShowVolume] = useState<boolean>(false);
-
-  /** API에서 가져온 거래 데이터 (현재 미사용) */
-  const [data, setData] = useState<TradeData[]>([]);
-
   /** 데이터 로딩 상태 */
   const [isLoading, setIsLoading] = useState(false);
 
   /** 에러 메시지 */
   const [error, setError] = useState<string | null>(null);
-
-  /** 거래량 차트 토글 상태 (현재 미사용) */
-  const [toggleTradeMountChart, setToggleTradeMountChart] = useState<boolean>(false);
-
-  /** 엑셀 파일 업로드 input 참조 */
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // ===== 데이터 로딩 =====
 
@@ -150,6 +64,7 @@ export default function ChartPage() {
 
       const excelData: ExcelData[] = res.data;
 
+      console.log(excelData);
       setJsonData(excelData);
     };
     getJsonData();
@@ -164,15 +79,18 @@ export default function ChartPage() {
   const getProcessedData = () => {
     /** 날짜순으로 정렬된 데이터 (최신이 뒤로) */
     // const sortedData = jsonData.sort((a, b) => a.tradeDate.localeCompare(b.tradeDate));
-    const sortedData = jsonData
+    const sortedData = jsonData;
 
     /** 차트 X축에 사용할 날짜 배열 */
     const dates = sortedData.map((item) => item.tradeDate).sort((a, b) => a.localeCompare(b));
 
-    console.debug('dates length:', dates.length);
-    console.debug('last date:', dates[dates.length - 1]);
+    console.debug("dates length:", dates.length);
+    console.debug("last date:", dates[dates.length - 1]);
 
-    return { sortedData, dates };
+    return {
+      sortedData,
+      dates,
+    };
   };
 
   // ===== 투자자별 차트 설정 =====
@@ -180,36 +98,36 @@ export default function ChartPage() {
   /** 투자자별 차트 설정 배열 */
   const investorChartConfigs = [
     {
-      key: '통합',
-      label: '개인/외국인/기관 투자자',
+      key: "통합",
+      label: "개인/외국인/기관 투자자",
       color: INVESTOR_COLORS.개인,
-      types: ['개인', '외국인', '기관'] as InvestorType[],
-      title: '개인/외국인/기관 투자자 매집수량',
-      height: '300px',
+      types: ["개인", "외국인", "기관"] as InvestorType[],
+      title: "개인/외국인/기관 투자자 매집수량",
+      height: "300px",
     },
     {
-      key: '개인',
-      label: '개인 투자자',
+      key: "개인",
+      label: "개인 투자자",
       color: INVESTOR_COLORS.개인,
-      types: ['개인'] as InvestorType[],
-      title: '개인 투자자 매집수량',
-      height: '250px',
+      types: ["개인"] as InvestorType[],
+      title: "개인 투자자 매집수량",
+      height: "250px",
     },
     {
-      key: '외국인',
-      label: '외국인 투자자',
+      key: "외국인",
+      label: "외국인 투자자",
       color: INVESTOR_COLORS.외국인,
-      types: ['외국인'] as InvestorType[],
-      title: '외국인 투자자 매집수량',
-      height: '250px',
+      types: ["외국인"] as InvestorType[],
+      title: "외국인 투자자 매집수량",
+      height: "250px",
     },
     {
-      key: '기관',
-      label: '기관 투자자',
+      key: "기관",
+      label: "기관 투자자",
       color: INVESTOR_COLORS.기관,
-      types: ['기관'] as InvestorType[],
-      title: '기관 투자자 매집수량',
-      height: '250px',
+      types: ["기관"] as InvestorType[],
+      title: "기관 투자자 매집수량",
+      height: "250px",
     },
   ];
 
@@ -224,13 +142,13 @@ export default function ChartPage() {
    * @param height - 차트 높이 (기본값: '250px')
    * @returns ECharts 옵션 객체
    */
-  const createInvestorChart = (investorTypes: InvestorType[] = [], title: string = '투자자 매집수량', height: string = '250px') => {
+  const createInvestorChart = (investorTypes: InvestorType[] = [], title: string = "투자자 매집수량", height: string = "250px") => {
     const { sortedData, dates } = getProcessedData();
 
     // ===== 투자자별 매집수량 데이터 추출 =====
 
     /** 표시할 투자자 유형 결정 (빈 배열이면 모든 투자자) */
-    const typesToShow: InvestorType[] = investorTypes.length > 0 ? investorTypes : ['개인', '외국인', '기관'];
+    const typesToShow: InvestorType[] = investorTypes.length > 0 ? investorTypes : ["개인", "외국인", "기관"];
 
     /** 각 투자자별 데이터 배열 */
     const allData = typesToShow.map((type) => extractInvestorData(sortedData, type));
@@ -264,7 +182,7 @@ export default function ChartPage() {
     const baseOptions = createCommonChartOptions(title, dates, zoomStart, zoomEnd, yAxisRange, legendData, {
       showSlider: false, // 슬라이더 숨기기 (마우스 휠 줌만 사용)
       showInsideZoom: true, // 마우스 휠 줌 활성화
-      gridBottom: '25%', // 슬라이더 없을 때 하단 여백 늘리기
+      gridBottom: "25%", // 슬라이더 없을 때 하단 여백 늘리기
     });
 
     // ===== 툴팁 커스터마이징 =====
@@ -280,7 +198,7 @@ export default function ChartPage() {
       // ===== 각 투자자별 정보 추가 =====
       params.forEach((param: any) => {
         const seriesName = param.seriesName;
-        const investorType = seriesName.replace(' 매집수량', '');
+        const investorType = seriesName.replace(" 매집수량", "");
 
         result += `${seriesName}: ${Number(param.value).toLocaleString()}<br/>`;
 
@@ -323,51 +241,24 @@ export default function ChartPage() {
     return (
       <ChartContainer>
         <ChartTitle>오류 발생</ChartTitle>
-        <div style={{ color: 'red', textAlign: 'center' }}>{error}</div>
+        <div
+          style={{
+            color: "red",
+            textAlign: "center",
+          }}>
+          {error}
+        </div>
       </ChartContainer>
     );
   }
 
   // ===== 이벤트 핸들러 =====
 
-  /**
-   * 엑셀 파일 업로드 처리 함수
-   * @param e - 파일 input change 이벤트
-   */
-  const handleExcelUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    try {
-      const file = e.target.files?.[0];
-      if (!file) return;
-
-      handleExcel(file);
-    } catch (err) {}
-  };
-
   // ===== 렌더링 =====
 
   return (
     <ChartContainer>
-      {/* ===== 상단 버튼 영역 ===== */}
-      {/* <ToggleButton
-        onClick={() => {
-          setToggleTradeMountChart(!toggleTradeMountChart);
-        }}>
-        거래량
-      </ToggleButton> */}
-      <ToggleButton
-        onClick={() => {
-          fileInputRef.current?.click();
-        }}>
-        엑셀업로드
-        <input
-          type='file'
-          accept='.xlsx, .xls'
-          ref={fileInputRef}
-          style={{ display: 'none' }}
-          onChange={handleExcelUpload}
-        />
-      </ToggleButton>
-
+      <ExcelUploadButton />
       {/* ===== 차트 섹션 ===== */}
       <ChartSection>
         <AllChartsContainer>
@@ -380,7 +271,10 @@ export default function ChartPage() {
               <ChartWrapper>
                 <ReactECharts
                   option={createInvestorChart(config.types, config.title, config.height)}
-                  style={{ height: config.height, width: '100%' }}
+                  style={{
+                    height: config.height,
+                    width: "100%",
+                  }}
                 />
               </ChartWrapper>
             </InvestorChartContainer>
