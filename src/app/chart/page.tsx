@@ -3,7 +3,6 @@
 import ReactECharts from "echarts-for-react";
 import { useEffect, useRef, useState } from "react";
 import { ExcelData, TradeData } from "@/types/trade";
-import { handleExcel } from "@/utils/excelUtils";
 import {
   createCommonChartOptions,
   createLineSeries,
