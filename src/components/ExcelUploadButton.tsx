@@ -1,5 +1,5 @@
 import { ToggleButton } from "@/ui/ui";
-import { getExcelToJson, handleExcel } from "@/utils/excelUtils";
+import { getExcelData, handleExcel } from "@/utils/excelUtils";
 import React, { useRef } from "react";
 
 const ExcelUploadButton = () => {
@@ -16,8 +16,7 @@ const ExcelUploadButton = () => {
       if (!file) return;
 
       //   handleExcel(file);
-      const data = await getExcelToJson(file);
-      console.debug("data:", data);
+      const data = await getExcelData(file);
     } catch (e) {
       console.error(e);
     }

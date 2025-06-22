@@ -48,48 +48,77 @@ export const handleExcel = async (originalExcelFile: File) => {
   processingExcelData2(data);
 };
 
+export const getExcelData = async (excelFile: File) => {
+  const originalData = await excelFileToJson(excelFile);
+  console.debug("originalData:", originalData);
+  const baseDataBeforeProcess: baseDataBeforeProcess = stockDataBeforeProcess(originalData);
+  console.debug("baseDataBeforeProcess:", baseDataBeforeProcess);
+};
+
+export const excelFileToJson = async (excelFile: File): Promise<originalExcelFile[]> => {
+  const arrayBuffer = await excelFile.arrayBuffer();
+  const buffer = Buffer.from(arrayBuffer);
+
+  const workbook = XLSX.read(buffer, { type: "buffer" });
+  const sheet = workbook.Sheets[workbook.SheetNames[0]];
+  return XLSX.utils.sheet_to_json(sheet);
+};
+
 export const stockDataBeforeProcess = (data: originalExcelFile[]): baseDataBeforeProcess => {
   const baseDataBeforeProcess: baseDataBeforeProcess = {
     cumulativeStockData: {
       cumulativeIndivMount: 0,
       minIndivMount: 0,
       maxIndivMount: 0,
+
       cumulativeForeMount: 0,
       minForeMount: 0,
       maxForeMount: 0,
+
       cumulativeFinInvMount: 0,
       minFinInvMount: 0,
       maxFinInvMount: 0,
+
       cumulativeInsurMount: 0,
       minInsurMount: 0,
       maxInsurMount: 0,
+
       cumulativeTrustMount: 0,
       minTrustMount: 0,
       maxTrustMount: 0,
+
       cumulativeEtcFinMount: 0,
       minEtcFinMount: 0,
       maxEtcFinMount: 0,
+
       cumulativeBankMount: 0,
       minBankMount: 0,
       maxBankMount: 0,
+
       cumulativePensMount: 0,
       minPensMount: 0,
       maxPensMount: 0,
+
       cumulativeSTrustMount: 0,
       minSTrustMount: 0,
       maxSTrustMount: 0,
+
       cumulativeNatMount: 0,
       minNatMount: 0,
       maxNatMount: 0,
+
       cumulativeEtcMount: 0,
       minEtcMount: 0,
       maxEtcMount: 0,
+
       cumulativeTotalForeAndInstMount: 0,
       minTotalForeAndInstMount: 0,
       maxTotalForeAndInstMount: 0,
+
       cumulativeTotalInsMount: 0,
       minTotalInsMount: 0,
       maxTotalInsMount: 0,
+
       cumulativeGTrustMount: 0,
       minGTrustMount: 0,
       maxGTrustMount: 0,
