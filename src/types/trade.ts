@@ -20,14 +20,17 @@ export interface ExcelData__ {
 
 // title 맘에 안들면 수정 ㄱㄱㄱㄱ
 export interface ChartData {
+  기본: ExcelData;
   개인: ExcelData__;
+  세력합: ExcelData__;
   외국인: ExcelData__;
+  금융투자: ExcelData__;
   투신_일반: ExcelData__;
-  투신_특수: ExcelData__;
-  기타금융: ExcelData__;
+  투신_사모: ExcelData__;
   은행: ExcelData__;
+  보험: ExcelData__;
+  기타금융: ExcelData__;
   연기금: ExcelData__;
-  사모펀드: ExcelData__;
   국가매집: ExcelData__;
   기타법인: ExcelData__;
 }
@@ -47,7 +50,7 @@ export interface ExcelData {
   tradingVolumeTotalIns: number;
   tradingVolumeFinInv: number;
   tradingVolumeEtc: number;
-  tradingVolumeTrust: number;
+  tradingVolumeGTrust: number;
   tradingVolumeSTrust: number;
   tradingVolumeBank: number;
   tradingVolumeInsur: number;
@@ -111,12 +114,12 @@ export interface ExcelData {
   /** 보험주가선도 */
   insurStockMomentum: number;
 
-  /** 투신(일반 + 특수)매집수량 */
-  trustCollectionVolume: number;
-  /** 투신(일반 + 특수)분산비율 */
-  trustDispersionRatio: number;
-  /** 투신(일반 + 특수)주가선도 */
-  trustStockMomentum: number;
+  /** 투신(일반)매집수량 */
+  gTrustCollectionVolume: number;
+  /** 투신(일반)분산비율 */
+  gTrustDispersionRatio: number;
+  /** 투신(일반)주가선도 */
+  gTrustStockMomentum: number;
 
   /** 기타금융매집수량 */
   etcFinCollectionVolume: number;

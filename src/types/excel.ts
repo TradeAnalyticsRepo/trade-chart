@@ -20,7 +20,7 @@ export interface originalExcelFile {
 }
 
 export interface baseDataBeforeProcess {
-    cumulativeStockData: {
+    cumulativeStockData?: {
         cumulativeIndivMount: number;   // 개인누적합계
         minIndivMount: number;          // 개인최고저점
         maxIndivMount: number;          // 개인최고고점
@@ -65,25 +65,28 @@ export interface baseDataBeforeProcess {
         maxEtcMount: number;
     },
     
-    stockListByPeriod: {
-        weekList?: originalExcelFile[];           // 이번주
-        week1List?: originalExcelFile[];           // 1주
-        week2List?: originalExcelFile[];           // 2주
-        week3List?: originalExcelFile[];           // 3주
-        week4List?: originalExcelFile[];           // 4주
-        quarter1List?: originalExcelFile[];        // 1분기
-        quarter2List?: originalExcelFile[];        // 2분기
-        quarter3List?: originalExcelFile[];        // 3분기
-        quarter4List?: originalExcelFile[];        // 4분기
-        year1List?: originalExcelFile[];           // 1년
-        year2List?: originalExcelFile[];           // 2년
-        year3List?: originalExcelFile[];           // 3년
-        year4List?: originalExcelFile[];           // 4년
-        year5List?: originalExcelFile[];           // 5년
-        year6List?: originalExcelFile[];           // 6년
-        year7List?: originalExcelFile[];           // 7년
-        year8List?: originalExcelFile[];           // 8년
-        year9List?: originalExcelFile[];           // 9년
-        year10List?: originalExcelFile[];          // 10년
+    stockListByPeriod?: {
+        week?: originalExcelFile[];           // 이번주
+        week1?: originalExcelFile[];           // 1주
+        week2?: originalExcelFile[];           // 2주
+        week3?: originalExcelFile[];           // 3주
+        week4?: originalExcelFile[];           // 4주
+        month1?: originalExcelFile[];          // 1개월
+        month2?: originalExcelFile[];          // 2개월
+        month3?: originalExcelFile[];          // 3개월 
+        quarter1?: originalExcelFile[];        // 1분기
+        quarter2?: originalExcelFile[];        // 2분기
+        quarter3?: originalExcelFile[];        // 3분기
+        quarter4?: originalExcelFile[];        // 4분기
+        year1?: originalExcelFile[];           // 1년
+        year2?: originalExcelFile[];           // 2년
+        year3?: originalExcelFile[];           // 3년
+        year4?: originalExcelFile[];           // 4년
+        year5?: originalExcelFile[];           // 5년
+        year6?: originalExcelFile[];           // 6년
+        year7?: originalExcelFile[];           // 7년
+        year8?: originalExcelFile[];           // 8년
+        year9?: originalExcelFile[];           // 9년
+        year10?: originalExcelFile[];          // 10년
     };
 }
