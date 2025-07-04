@@ -1,5 +1,5 @@
 import { baseDataBeforeProcess, originalExcelFile } from "@/types/excel";
-import { ChartData, ExcelData } from "@/types/trade";
+import { ExcelData } from "@/types/trade";
 import * as XLSX from "xlsx";
 import { callPostApi } from "./api";
 
@@ -20,33 +20,6 @@ const excelEnum = Object.freeze({
   TotalForeAndInst: "TotalForeAndInst",
 });
 
-export const handleExcel = async (originalExcelFile: File) => {
-  // const formData = new FormData();
-  // formData.append('file', file);
-  const arrayBuffer = await originalExcelFile.arrayBuffer();
-  const buffer = Buffer.from(arrayBuffer);
-
-  const workbook = XLSX.read(buffer, { type: "buffer" });
-  const sheet = workbook.Sheets[workbook.SheetNames[0]];
-  const data: originalExcelFile[] = XLSX.utils.sheet_to_json(sheet);
-
-  const baseDataBeforeProcess: baseDataBeforeProcess = {};
-  baseDataBeforeProcess.cumulativeStockData = stockDataBeforeCumulateProcess(data);
-
-  // promise로 병렬처리 어떤지 고민
-  const graphProcessingData: ExcelData[] = processingExcelData(data, baseDataBeforeProcess.cumulativeStockData);
-  const parameter = {
-    stockId: "11111",
-    processingData: graphProcessingData,
-    type: "graph",
-  };
-  console.log(parameter);
-  callPostApi("/api/excel", parameter);
-
-  
-  processingExcelData2(data);
-};
-
 export const getExcelData = async (excelFile: File) => {
   const originalData = await excelFileToJson(excelFile);
   
@@ -59,22 +32,41 @@ export const getExcelData = async (excelFile: File) => {
   
   console.debug("originalData:", originalData);
   const baseDataBeforeProcess: baseDataBeforeProcess = {};
+  // 기간별 데이터 추출
   baseDataBeforeProcess.stockListByPeriod = stockDataBeforePeriodProcess(originalData);
+  processingExcelDataForCummulativePeriod(baseDataBeforeProcess.stockListByPeriod);
+
 
   const reversedOriginalData = originalData.reverse(); // reverse 원본배열 변경
+  // 누적합계, 최고저점, 최고고점 데이터 추출
   baseDataBeforeProcess.cumulativeStockData = stockDataBeforeCumulateProcess(reversedOriginalData);
-  console.log(baseDataBeforeProcess);
+
   console.debug("baseDataBeforeProcess:", baseDataBeforeProcess);
-  const graphProcessingData: ExcelData[] = processingExcelData(reversedOriginalData, baseDataBeforeProcess.cumulativeStockData);
-  const parameter = {
+  // 누적합계, 주가선도 등 데이터 가공작업
+  const graphProcessingData: ExcelData[] = processingExcelDataForCummulativeGraph(reversedOriginalData, baseDataBeforeProcess.cumulativeStockData);
+
+  //표에 있는 누적, 상관계수 등을 위함.
+  const latestGraphData = graphProcessingData[0]; 
+
+  const cumulativeGraphData = {
     stockId: "11111",
     processingData: graphProcessingData,
     type: "graph",
   };
-  console.log(parameter);
-  callPostApi("/api/excel", parameter);
-  // processingExcelData2(data);
+
+  const cumulativeLastestData = {
+    stockId: "11111",
+    processingData: latestGraphData,
+    type: "lastest"
+  }
+
+
+  console.log(cumulativeGraphData, cumulativeLastestData);
+  // 그래프 json파일 생성
+  callPostApi("/api/excel", cumulativeGraphData);
+  callPostApi("/api/excel", cumulativeLastestData);
 };
+
 
 export const excelFileToJson = async (excelFile: File): Promise<originalExcelFile[]> => {
   const arrayBuffer = await excelFile.arrayBuffer();
@@ -124,7 +116,7 @@ export const stockDataBeforeCumulateProcess = (data: originalExcelFile[]): baseD
 };
 
 // 수급계산 로직
-export const processingExcelData = (data: originalExcelFile[], cumulativeStockData: baseDataBeforeProcess["cumulativeStockData"]) => {
+export const processingExcelDataForCummulativeGraph = (data: originalExcelFile[], cumulativeStockData: baseDataBeforeProcess["cumulativeStockData"]) => {
   let volume = {
     indivCollectionVolume: cumulativeStockData.cumulativeIndivMount - cumulativeStockData.minIndivMount,
     totalForeAndInstCollectionVolume: cumulativeStockData.cumulativeTotalForeAndInstMount - cumulativeStockData.minTotalForeAndInstMount,
@@ -261,12 +253,13 @@ export const processingExcelData = (data: originalExcelFile[], cumulativeStockDa
 
     // const defaultInfo = {
     //   tradeDate: item.일자,
-    //   endMount: item.종가,
+    //   open: item.종가 + item.__EMPTY
+    //   close: item.종가,
     //   previousDayComparison: item.__EMPTY
     // };
 
     // const dayValue1: ChartData = {
-    //   기본 : {
+    //   주가 : {
     //     ...defaultInfo,
     //     tradingVolume: item.거래량
     //   },
@@ -275,187 +268,90 @@ export const processingExcelData = (data: originalExcelFile[], cumulativeStockDa
     //     tradingVolume: item.개인,
     //     stockCorrelation: 0,
     //     collectionVolume: volume.indivCollectionVolume,
-    //     dispersionRatio: calcPercent(
-    //     volume.indivCollectionVolume,
-    //     cumulativeStockData.cumulativeIndivMount + cumulativeStockData.maxIndivMount - cumulativeStockData.minIndivMount
-    //   ) ,
+    //     dispersionRatio: calcPercent(volume.indivCollectionVolume,cumulativeStockData.cumulativeIndivMount + cumulativeStockData.maxIndivMount - cumulativeStockData.minIndivMount),
     //     stockMomentum: calcPercent(volume.indivCollectionVolume, sumTotalCollectionVolume),
     //   },
     //   세력합 : {
     //     ...defaultInfo,
     //     tradingVolume: item.외국인 + item.기관종합,
     //     stockCorrelation: ,
-    //     collectionVolume: ,
-    //     dispersionRatio: ,
-    //     stockMomentum: 
+    //     collectionVolume: volume.totalForeAndInstCollectionVolume,
+    //     dispersionRatio: calcPercent(volume.totalForeAndInstCollectionVolume,cumulativeStockData.cumulativeTotalForeAndInstMount + cumulativeStockData.maxTotalForeAndInstMount - cumulativeStockData.minTotalForeAndInstMount),
+    //     stockMomentum: calcPercent(volume.totalForeAndInstCollectionVolume, sumTotalCollectionVolume),
     //   },
     //   외국인 : {
     //     ...defaultInfo,
     //     tradingVolume: item.외국인,
     //     stockCorrelation: ,
-    //     collectionVolume: ,
-    //     dispersionRatio: ,
-    //     stockMomentum: 
+    //     collectionVolume: volume.foreCollectionVolume,
+    //     dispersionRatio: calcPercent(volume.foreCollectionVolume,cumulativeStockData.cumulativeForeMount + cumulativeStockData.maxForeMount - cumulativeStockData.minForeMount),
+    //     stockMomentum: calcPercent(volume.foreCollectionVolume, sumTotalCollectionVolume),
     //   },
     //   투신_일반 : {
     //     ...defaultInfo,
     //     tradingVolume: item.__EMPTY_1,
     //     stockCorrelation: ,
-    //     collectionVolume: ,
-    //     dispersionRatio: ,
-    //     stockMomentum: 
+    //     collectionVolume: volume.gTrustCollectionVolume,
+    //     dispersionRatio: calcPercent(volume.gTrustCollectionVolume, cumulativeStockData.cumulativeGTrustMount + cumulativeStockData.maxGTrustMount - cumulativeStockData.minGTrustMount),
+    //     stockMomentum: calcPercent(volume.gTrustCollectionVolume, sumTotalCollectionVolume),
     //   },
     //   투신_사모 : {
     //     ...defaultInfo,
     //     tradingVolume: item.__EMPTY_2,
     //     stockCorrelation: ,
-    //     collectionVolume: ,
-    //     dispersionRatio: ,
-    //     stockMomentum: 
+    //     collectionVolume: volume.sTrustCollectionVolume,
+    //     dispersionRatio: calcPercent(volume.sTrustCollectionVolume, cumulativeStockData.cumulativeSTrustMount + cumulativeStockData.maxSTrustMount - cumulativeStockData.minSTrustMount ),
+    //     stockMomentum: calcPercent(volume.sTrustCollectionVolume, sumTotalCollectionVolume),
     //   },
     //   은행 : {
     //     ...defaultInfo,
     //     tradingVolume: item.__EMPTY_3,
     //     stockCorrelation: ,
-    //     collectionVolume: ,
-    //     dispersionRatio: ,
-    //     stockMomentum: 
+    //     collectionVolume: volume.bankCollectionVolume,
+    //     dispersionRatio: calcPercent( volume.bankCollectionVolume, cumulativeStockData.cumulativeBankMount + cumulativeStockData.maxBankMount - cumulativeStockData.minBankMount),
+    //     stockMomentum: calcPercent(volume.bankCollectionVolume, sumTotalCollectionVolume),
     //   },
     //   보험 : {
     //     ...defaultInfo,
     //     tradingVolume: item.__EMPTY_4,
     //     stockCorrelation: ,
-    //     collectionVolume: ,
-    //     dispersionRatio: ,
-    //     stockMomentum: 
+    //     collectionVolume: volume.insurCollectionVolume,
+    //     dispersionRatio: calcPercent(volume.insurCollectionVolume, cumulativeStockData.cumulativeInsurMount + cumulativeStockData.maxInsurMount - cumulativeStockData.minInsurMount),
+    //     stockMomentum: calcPercent(volume.insurCollectionVolume, sumTotalCollectionVolume),
     //   },
     //   기타금융 : {
     //     ...defaultInfo,
     //     tradingVolume: item.__EMPTY_5,
     //     stockCorrelation: ,
-    //     collectionVolume: ,
-    //     dispersionRatio: ,
-    //     stockMomentum: 
+    //     collectionVolume: volume.etcFinCollectionVolume,
+    //     dispersionRatio: calcPercent( volume.etcFinCollectionVolume, cumulativeStockData.cumulativeEtcFinMount + cumulativeStockData.maxEtcFinMount - cumulativeStockData.minEtcFinMount),
+    //     stockMomentum: calcPercent(volume.etcFinCollectionVolume, sumTotalCollectionVolume),
     //   },
     //   연기금 : {
     //     ...defaultInfo,
     //     tradingVolume: item.__EMPTY_6,
     //     stockCorrelation: ,
-    //     collectionVolume: ,
-    //     dispersionRatio: ,
-    //     stockMomentum: 
+    //     collectionVolume: volume.pensCollectionVolume,
+    //     dispersionRatio: calcPercent(volume.pensCollectionVolume, cumulativeStockData.cumulativePensMount + cumulativeStockData.maxPensMount - cumulativeStockData.minPensMount),
+    //     stockMomentum: calcPercent(volume.pensCollectionVolume, sumTotalCollectionVolume),
     //   },
     //   국가매집 : {
     //     ...defaultInfo,
     //     tradingVolume: item.__EMPTY_7,
     //     stockCorrelation: ,
-    //     collectionVolume: ,
-    //     dispersionRatio: ,
-    //     stockMomentum: 
+    //     collectionVolume: volume.natCollectionVolume,
+    //     dispersionRatio: calcPercent(volume.natCollectionVolume, cumulativeStockData.cumulativeNatMount + cumulativeStockData.maxNatMount - cumulativeStockData.minNatMount),
+    //     stockMomentum: calcPercent(volume.natCollectionVolume, sumTotalCollectionVolume),
     //   },
 
     //   기타법인 : {
     //     ...defaultInfo,
     //     tradingVolume: item.기타,
     //     stockCorrelation: ,
-    //     collectionVolume: ,
-    //     dispersionRatio: ,
-    //     stockMomentum: 
+    //     collectionVolume: volume.etcCollectionVolume,
+    //     dispersionRatio: calcPercent(volume.etcCollectionVolume,cumulativeStockData.cumulativeEtcMount + cumulativeStockData.maxEtcMount - cumulativeStockData.minEtcMount),
+    //     stockMomentum: calcPercent(volume.etcCollectionVolume, sumTotalCollectionVolume),
     //   }
-
-    //   tradingVolumeTotalForeAndInst: item.외국인 + item.기관종합,
-    //   tradingVolumeFore: item.외국인,
-    //   tradingVolumeTotalIns: item.기관종합,
-    //   tradingVolumeFinInv: item.기관,
-    //   tradingVolumeEtc: item.기타,
-    //   tradingVolumeGTrust: item.__EMPTY_1,
-    //   tradingVolumeSTrust: item.__EMPTY_2,
-    //   tradingVolumeBank: item.__EMPTY_3,
-    //   tradingVolumeInsur: item.__EMPTY_4,
-    //   tradingVolumeEtcFin: item.__EMPTY_5,
-    //   tradingVolumePens: item.__EMPTY_6,
-    //   tradingVolumeNat: item.__EMPTY_7,
-
-    //   indivCollectionVolume: volume.indivCollectionVolume,
-    //   indivDispersionRatio: calcPercent(
-    //     volume.indivCollectionVolume,
-    //     cumulativeStockData.cumulativeIndivMount + cumulativeStockData.maxIndivMount - cumulativeStockData.minIndivMount
-    //   ),
-    //   indivStockMomentum: calcPercent(volume.indivCollectionVolume, sumTotalCollectionVolume),
-    //   totalForeAndInstCollectionVolume: volume.totalForeAndInstCollectionVolume,
-    //   totalForeAndInstDispersionRatio: calcPercent(
-    //     volume.totalForeAndInstCollectionVolume,
-    //     cumulativeStockData.cumulativeTotalForeAndInstMount +
-    //       cumulativeStockData.maxTotalForeAndInstMount -
-    //       cumulativeStockData.minTotalForeAndInstMount
-    //   ),
-    //   totalForeAndInstStockMomentum: calcPercent(volume.totalForeAndInstCollectionVolume, sumTotalCollectionVolume),
-    //   foreCollectionVolume: volume.foreCollectionVolume,
-    //   foreDispersionRatio: calcPercent(
-    //     volume.foreCollectionVolume,
-    //     cumulativeStockData.cumulativeForeMount + cumulativeStockData.maxForeMount - cumulativeStockData.minForeMount
-    //   ),
-    //   foreStockMomentum: calcPercent(volume.foreCollectionVolume, sumTotalCollectionVolume),
-    //   totalInsCollectionVolume: volume.totalInsCollectionVolume,
-    //   totalInsDispersionRatio: calcPercent(
-    //     volume.totalInsCollectionVolume,
-    //     cumulativeStockData.cumulativeTotalInsMount + cumulativeStockData.maxTotalInsMount - cumulativeStockData.minTotalInsMount
-    //   ),
-    //   totalInsStockMomentum: calcPercent(volume.totalInsCollectionVolume, sumTotalCollectionVolume),
-    //   finInvCollectionVolume: volume.finInvCollectionVolume,
-    //   finInvDispersionRatio: calcPercent(
-    //     volume.finInvCollectionVolume,
-    //     cumulativeStockData.cumulativeFinInvMount + cumulativeStockData.maxFinInvMount - cumulativeStockData.minFinInvMount
-    //   ),
-    //   finInvStockMomentum: calcPercent(volume.finInvCollectionVolume, sumTotalCollectionVolume),
-    //   insurCollectionVolume: volume.insurCollectionVolume,
-    //   insurDispersionRatio: calcPercent(
-    //     volume.insurCollectionVolume,
-    //     cumulativeStockData.cumulativeInsurMount + cumulativeStockData.maxInsurMount - cumulativeStockData.minInsurMount
-    //   ),
-    //   insurStockMomentum: calcPercent(volume.insurCollectionVolume, sumTotalCollectionVolume),
-    //   gTrustCollectionVolume: volume.gTrustCollectionVolume,
-    //   gTrustDispersionRatio: calcPercent(
-    //     volume.gTrustCollectionVolume,
-    //     cumulativeStockData.cumulativeTrustMount + cumulativeStockData.maxGTrustMount - cumulativeStockData.minGTrustMount
-    //   ),
-    //   trustStockMomentum: calcPercent(volume.gTrustCollectionVolume, sumTotalCollectionVolume),
-    //   etcFinCollectionVolume: volume.etcFinCollectionVolume,
-    //   etcFinDispersionRatio: calcPercent(
-    //     volume.etcFinCollectionVolume,
-    //     cumulativeStockData.cumulativeEtcFinMount + cumulativeStockData.maxEtcFinMount - cumulativeStockData.minEtcFinMount
-    //   ),
-    //   etcFinStockMomentum: calcPercent(volume.etcFinCollectionVolume, sumTotalCollectionVolume),
-    //   bankCollectionVolume: volume.bankCollectionVolume,
-    //   bankDispersionRatio: calcPercent(
-    //     volume.bankCollectionVolume,
-    //     cumulativeStockData.cumulativeBankMount + cumulativeStockData.maxBankMount - cumulativeStockData.minBankMount
-    //   ),
-    //   bankStockMomentum: calcPercent(volume.bankCollectionVolume, sumTotalCollectionVolume),
-    //   pensCollectionVolume: volume.pensCollectionVolume,
-    //   pensDispersionRatio: calcPercent(
-    //     volume.pensCollectionVolume,
-    //     cumulativeStockData.cumulativePensMount + cumulativeStockData.maxPensMount - cumulativeStockData.minPensMount
-    //   ),
-    //   pensStockMomentum: calcPercent(volume.pensCollectionVolume, sumTotalCollectionVolume),
-    //   sTrustCollectionVolume: volume.sTrustCollectionVolume,
-    //   sTrustDispersionRatio: calcPercent(
-    //     volume.sTrustCollectionVolume,
-    //     cumulativeStockData.cumulativeSTrustMount + cumulativeStockData.maxSTrustMount - cumulativeStockData.minSTrustMount
-    //   ),
-    //   sTrustStockMomentum: calcPercent(volume.sTrustCollectionVolume, sumTotalCollectionVolume),
-    //   natCollectionVolume: volume.natCollectionVolume,
-    //   natDispersionRatio: calcPercent(
-    //     volume.natCollectionVolume,
-    //     cumulativeStockData.cumulativeNatMount + cumulativeStockData.maxNatMount - cumulativeStockData.minNatMount
-    //   ),
-    //   natStockMomentum: calcPercent(volume.natCollectionVolume, sumTotalCollectionVolume),
-    //   etcCollectionVolume: volume.etcCollectionVolume,
-    //   etcDispersionRatio: calcPercent(
-    //     volume.etcCollectionVolume,
-    //     cumulativeStockData.cumulativeEtcMount + cumulativeStockData.maxEtcMount - cumulativeStockData.minEtcMount
-    //   ),
-    //   etcStockMomentum: calcPercent(volume.etcCollectionVolume, sumTotalCollectionVolume),
     // };
 
     result.push(dayValue);
@@ -483,7 +379,7 @@ export const stockDataBeforePeriodProcess = (data: originalExcelFile[]): baseDat
       if(weekList.length < 5) {
         weekList.push(item);
       } else {
-        week++;
+        stockListByPeriod[`week${++week}`].push(item);
       }
     }
 
@@ -492,7 +388,7 @@ export const stockDataBeforePeriodProcess = (data: originalExcelFile[]): baseDat
       if(monthList.length < 30) {
         monthList.push(item);
       } else {
-        month++;
+        stockListByPeriod[`month${++month}`].push(item);
       }
     }
 
@@ -501,8 +397,15 @@ export const stockDataBeforePeriodProcess = (data: originalExcelFile[]): baseDat
       if(quarterList.length < 90) {
         quarterList.push(item);
       } else {
-        quarter++;
+        stockListByPeriod[`quarter${++quarter}`].push(item);
       }
+    }
+    
+    const yearList = stockListByPeriod[`year${year}`] || [];
+    if(yearList.length < 365){
+      yearList.push(item);
+    } else {
+      stockListByPeriod[`year${++year}`].push(item);
     }
 
   })
@@ -510,8 +413,11 @@ export const stockDataBeforePeriodProcess = (data: originalExcelFile[]): baseDat
   return stockListByPeriod;
 }
 // 수급분석표 로직
-export const processingExcelData2 = (data: originalExcelFile) => {
-
+export const processingExcelDataForCummulativePeriod = (data : baseDataBeforeProcess["stockListByPeriod"]) => {
+  const keys = Object.keys(data ?? {});
+  keys.forEach(key => {
+    
+  })
 };
 
 const calcPercent = (num1: number, num2: number) => Math.round((num1 / num2) * 100);
@@ -576,7 +482,30 @@ const initCumulativeStockData = {
   maxGTrustMount: 0,
 }
 
-const initStockListByPeriod = {
+const initStockListByPeriod: {
+  week: originalExcelFile[],
+  week1: originalExcelFile[],
+  week2: originalExcelFile[],
+  week3: originalExcelFile[],
+  week4: originalExcelFile[],
+  month1: originalExcelFile[],
+  month2: originalExcelFile[],
+  month3: originalExcelFile[],
+  quarter1: originalExcelFile[],
+  quarter2: originalExcelFile[],
+  quarter3: originalExcelFile[],
+  quarter4: originalExcelFile[],
+  year1: originalExcelFile[],
+  year2: originalExcelFile[],
+  year3: originalExcelFile[],
+  year4: originalExcelFile[],
+  year5: originalExcelFile[],
+  year6: originalExcelFile[],
+  year7: originalExcelFile[],
+  year8: originalExcelFile[],
+  year9: originalExcelFile[],
+  year10: originalExcelFile[],
+} = {
   week: [],
   week1: [],
   week2: [],

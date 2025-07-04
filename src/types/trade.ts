@@ -1,9 +1,10 @@
-// 이것도 맞춰보자 
 export interface ExcelData__ {
   /** 거래 날짜 */
   tradeDate: string;
+  /** 시작가 */
+  open: number;
   /** 종가 */
-  endMount: number;
+  close: number;
   /** 전일 대비 */
   previousDayComparison: number;
   /** 거래량 */
@@ -18,9 +19,14 @@ export interface ExcelData__ {
   stockMomentum: number;
 }
 
-// title 맘에 안들면 수정 ㄱㄱㄱㄱ
 export interface ChartData {
-  기본: ExcelData;
+  주가: {
+    tradeDate: string;
+    open: number;
+    close: number;
+    high: number;
+    low: number;
+  };
   개인: ExcelData__;
   세력합: ExcelData__;
   외국인: ExcelData__;
@@ -35,7 +41,24 @@ export interface ChartData {
   기타법인: ExcelData__;
 }
 
+export interface TableData {
+  tradeDateNm: string;
+  avgMount: number;
 
+  tradingVolumeIndiv: number;
+  tradingVolumeTotalForeAndInst: number;
+  tradingVolumeFore: number;
+  tradingVolumeTotalIns: number;
+  tradingVolumeFinInv: number;
+  tradingVolumeEtc: number;
+  tradingVolumeGTrust: number;
+  tradingVolumeSTrust: number;
+  tradingVolumeBank: number;
+  tradingVolumeInsur: number;
+  tradingVolumeEtcFin: number;
+  tradingVolumePens: number;
+  tradingVolumeNat: number;
+}
 
 /**
  * [종목별 일별동향] 컬럼값 기준 타입 명시.
