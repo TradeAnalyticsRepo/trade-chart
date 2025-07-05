@@ -1,5 +1,5 @@
 import { baseDataBeforeProcess, originalExcelFile } from "@/types/excel";
-import { ExcelData } from "@/types/trade";
+import { ChartData, ExcelData, TableData } from "@/types/trade";
 import * as XLSX from "xlsx";
 import { callPostApi } from "./api";
 
@@ -22,28 +22,29 @@ const excelEnum = Object.freeze({
 
 export const getExcelData = async (excelFile: File) => {
   const originalData = await excelFileToJson(excelFile);
-  
-  // const filtered = reversedOriginalData.filter(row => {
-  //   if(!row.일자){
-  //     return false;
-  //   }
-  //   return Number(row.일자.replaceAll('/', '')) >= 20220609;
-  // });
-  
-  console.debug("originalData:", originalData);
+  // 명칭줄(첫밴째 인덱스) 제거
+  originalData.shift();
+  console.log("originalData:", originalData);
   const baseDataBeforeProcess: baseDataBeforeProcess = {};
   // 기간별 데이터 추출
   baseDataBeforeProcess.stockListByPeriod = stockDataBeforePeriodProcess(originalData);
-  processingExcelDataForCummulativePeriod(baseDataBeforeProcess.stockListByPeriod);
-
+  console.log(baseDataBeforeProcess.stockListByPeriod);
+  const tableData:TableData[] = processingExcelDataForCummulativePeriod(baseDataBeforeProcess.stockListByPeriod);
+  console.log(tableData);
 
   const reversedOriginalData = originalData.reverse(); // reverse 원본배열 변경
+  const filtered = reversedOriginalData.filter(row => {
+    if(!row.일자){
+      return false;
+    }
+    return Number(row.일자.replaceAll('/', '')) >= 20201029;
+  });
   // 누적합계, 최고저점, 최고고점 데이터 추출
-  baseDataBeforeProcess.cumulativeStockData = stockDataBeforeCumulateProcess(reversedOriginalData);
+  baseDataBeforeProcess.cumulativeStockData = stockDataBeforeCumulateProcess(filtered);
 
   console.debug("baseDataBeforeProcess:", baseDataBeforeProcess);
   // 누적합계, 주가선도 등 데이터 가공작업
-  const graphProcessingData: ExcelData[] = processingExcelDataForCummulativeGraph(reversedOriginalData, baseDataBeforeProcess.cumulativeStockData);
+  const graphProcessingData: ChartData[] = processingExcelDataForCummulativeGraph(filtered, baseDataBeforeProcess.cumulativeStockData);
 
   //표에 있는 누적, 상관계수 등을 위함.
   const latestGraphData = graphProcessingData[0]; 
@@ -133,226 +134,132 @@ export const processingExcelDataForCummulativeGraph = (data: originalExcelFile[]
     etcCollectionVolume: cumulativeStockData.cumulativeEtcMount - cumulativeStockData.minEtcMount,
   };
 
-  const result: ExcelData[] = [];
-  // const result: ChartData[] = [];
+  
+  const result: ChartData[] = [];
 
   data.forEach((item, idx) => {
-    if (!item.일자) return;
     let sumTotalCollectionVolume = 0;
-    if(idx > 1) {
-      Object.entries(excelEnum).forEach(([key, value]) => {
-        if (value === "TotalForeAndInst") {
-          volume.totalForeAndInstCollectionVolume += item.외국인 + item.기관종합;
-        } else {
-          volume[`${toCamel(value)}CollectionVolume`] += item[key];
-          sumTotalCollectionVolume += volume[`${toCamel(value)}CollectionVolume`];
+    Object.entries(excelEnum).forEach(([key, value]) => {
+        if(idx > 0) {
+          if (value === "TotalForeAndInst") {
+            volume.totalForeAndInstCollectionVolume += item.외국인 + item.기관종합;
+          } else {
+            volume[`${toCamel(value)}CollectionVolume`] += item[key];
+          }
         }
+        if(value !== "TotalForeAndInst")
+        sumTotalCollectionVolume += volume[`${toCamel(value)}CollectionVolume`];
       });
-    }
+      if(idx === 0){
+        console.log(cumulativeStockData.maxIndivMount, cumulativeStockData.minIndivMount, cumulativeStockData.maxIndivMount - cumulativeStockData.minIndivMount ,sumTotalCollectionVolume);
+      }
+      
 
-    const dayValue: ExcelData = {
+    
+    const defaultInfo = {
       tradeDate: item.일자,
-      endMount: item.종가,
-      previousDayComparison: item.__EMPTY,
-      tradingVolume: item.거래량,
-      tradingVolumeIndiv: item.개인,
-      tradingVolumeTotalForeAndInst: item.외국인 + item.기관종합,
-      tradingVolumeFore: item.외국인,
-      tradingVolumeTotalIns: item.기관종합,
-      tradingVolumeFinInv: item.기관,
-      tradingVolumeEtc: item.기타,
-      tradingVolumeGTrust: item.__EMPTY_1,
-      tradingVolumeSTrust: item.__EMPTY_2,
-      tradingVolumeBank: item.__EMPTY_3,
-      tradingVolumeInsur: item.__EMPTY_4,
-      tradingVolumeEtcFin: item.__EMPTY_5,
-      tradingVolumePens: item.__EMPTY_6,
-      tradingVolumeNat: item.__EMPTY_7,
-
-      indivCollectionVolume: volume.indivCollectionVolume,
-      indivDispersionRatio: calcPercent(
-        volume.indivCollectionVolume,
-        cumulativeStockData.cumulativeIndivMount + cumulativeStockData.maxIndivMount - cumulativeStockData.minIndivMount
-      ),
-      indivStockMomentum: calcPercent(volume.indivCollectionVolume, sumTotalCollectionVolume),
-      totalForeAndInstCollectionVolume: volume.totalForeAndInstCollectionVolume,
-      totalForeAndInstDispersionRatio: calcPercent(
-        volume.totalForeAndInstCollectionVolume,
-        cumulativeStockData.cumulativeTotalForeAndInstMount +
-          cumulativeStockData.maxTotalForeAndInstMount -
-          cumulativeStockData.minTotalForeAndInstMount
-      ),
-      totalForeAndInstStockMomentum: calcPercent(volume.totalForeAndInstCollectionVolume, sumTotalCollectionVolume),
-      foreCollectionVolume: volume.foreCollectionVolume,
-      foreDispersionRatio: calcPercent(
-        volume.foreCollectionVolume,
-        cumulativeStockData.cumulativeForeMount + cumulativeStockData.maxForeMount - cumulativeStockData.minForeMount
-      ),
-      foreStockMomentum: calcPercent(volume.foreCollectionVolume, sumTotalCollectionVolume),
-      totalInsCollectionVolume: volume.totalInsCollectionVolume,
-      totalInsDispersionRatio: calcPercent(
-        volume.totalInsCollectionVolume,
-        cumulativeStockData.cumulativeTotalInsMount + cumulativeStockData.maxTotalInsMount - cumulativeStockData.minTotalInsMount
-      ),
-      totalInsStockMomentum: calcPercent(volume.totalInsCollectionVolume, sumTotalCollectionVolume),
-      finInvCollectionVolume: volume.finInvCollectionVolume,
-      finInvDispersionRatio: calcPercent(
-        volume.finInvCollectionVolume,
-        cumulativeStockData.cumulativeFinInvMount + cumulativeStockData.maxFinInvMount - cumulativeStockData.minFinInvMount
-      ),
-      finInvStockMomentum: calcPercent(volume.finInvCollectionVolume, sumTotalCollectionVolume),
-      insurCollectionVolume: volume.insurCollectionVolume,
-      insurDispersionRatio: calcPercent(
-        volume.insurCollectionVolume,
-        cumulativeStockData.cumulativeInsurMount + cumulativeStockData.maxInsurMount - cumulativeStockData.minInsurMount
-      ),
-      insurStockMomentum: calcPercent(volume.insurCollectionVolume, sumTotalCollectionVolume),
-      gTrustCollectionVolume: volume.gTrustCollectionVolume,
-      gTrustDispersionRatio: calcPercent(
-        volume.gTrustCollectionVolume,
-        cumulativeStockData.cumulativeTrustMount + cumulativeStockData.maxGTrustMount - cumulativeStockData.minGTrustMount
-      ),
-      trustStockMomentum: calcPercent(volume.gTrustCollectionVolume, sumTotalCollectionVolume),
-      etcFinCollectionVolume: volume.etcFinCollectionVolume,
-      etcFinDispersionRatio: calcPercent(
-        volume.etcFinCollectionVolume,
-        cumulativeStockData.cumulativeEtcFinMount + cumulativeStockData.maxEtcFinMount - cumulativeStockData.minEtcFinMount
-      ),
-      etcFinStockMomentum: calcPercent(volume.etcFinCollectionVolume, sumTotalCollectionVolume),
-      bankCollectionVolume: volume.bankCollectionVolume,
-      bankDispersionRatio: calcPercent(
-        volume.bankCollectionVolume,
-        cumulativeStockData.cumulativeBankMount + cumulativeStockData.maxBankMount - cumulativeStockData.minBankMount
-      ),
-      bankStockMomentum: calcPercent(volume.bankCollectionVolume, sumTotalCollectionVolume),
-      pensCollectionVolume: volume.pensCollectionVolume,
-      pensDispersionRatio: calcPercent(
-        volume.pensCollectionVolume,
-        cumulativeStockData.cumulativePensMount + cumulativeStockData.maxPensMount - cumulativeStockData.minPensMount
-      ),
-      pensStockMomentum: calcPercent(volume.pensCollectionVolume, sumTotalCollectionVolume),
-      sTrustCollectionVolume: volume.sTrustCollectionVolume,
-      sTrustDispersionRatio: calcPercent(
-        volume.sTrustCollectionVolume,
-        cumulativeStockData.cumulativeSTrustMount + cumulativeStockData.maxSTrustMount - cumulativeStockData.minSTrustMount
-      ),
-      sTrustStockMomentum: calcPercent(volume.sTrustCollectionVolume, sumTotalCollectionVolume),
-      natCollectionVolume: volume.natCollectionVolume,
-      natDispersionRatio: calcPercent(
-        volume.natCollectionVolume,
-        cumulativeStockData.cumulativeNatMount + cumulativeStockData.maxNatMount - cumulativeStockData.minNatMount
-      ),
-      natStockMomentum: calcPercent(volume.natCollectionVolume, sumTotalCollectionVolume),
-      etcCollectionVolume: volume.etcCollectionVolume,
-      etcDispersionRatio: calcPercent(
-        volume.etcCollectionVolume,
-        cumulativeStockData.cumulativeEtcMount + cumulativeStockData.maxEtcMount - cumulativeStockData.minEtcMount
-      ),
-      etcStockMomentum: calcPercent(volume.etcCollectionVolume, sumTotalCollectionVolume),
+      open: item.종가 + item.__EMPTY,
+      close: item.종가,
+      previousDayComparison: item.__EMPTY
     };
 
-    // const defaultInfo = {
-    //   tradeDate: item.일자,
-    //   open: item.종가 + item.__EMPTY
-    //   close: item.종가,
-    //   previousDayComparison: item.__EMPTY
-    // };
+    const dayValue: ChartData = {
+      주가 : {
+        ...defaultInfo,
+        high:0,
+        low:0,
+        tradingVolume: item.거래량
+      },
+      개인 : {
+        ...defaultInfo,
+        tradingVolume: item.개인,
+        stockCorrelation: 0,
+        collectionVolume: volume.indivCollectionVolume,
+        dispersionRatio: calcPercent(volume.indivCollectionVolume, cumulativeStockData.maxIndivMount - cumulativeStockData.minIndivMount),
+        stockMomentum: calcPercent(cumulativeStockData.maxIndivMount - cumulativeStockData.minIndivMount, sumTotalCollectionVolume),
+      },
+      세력합 : {
+        ...defaultInfo,
+        tradingVolume: item.외국인 + item.기관종합,
+        stockCorrelation: 0,
+        collectionVolume: volume.totalForeAndInstCollectionVolume,
+        dispersionRatio: calcPercent(volume.totalForeAndInstCollectionVolume,cumulativeStockData.cumulativeTotalForeAndInstMount + cumulativeStockData.maxTotalForeAndInstMount - cumulativeStockData.minTotalForeAndInstMount),
+        stockMomentum: calcPercent(volume.totalForeAndInstCollectionVolume, sumTotalCollectionVolume),
+      },
+      외국인 : {
+        ...defaultInfo,
+        tradingVolume: item.외국인,
+        stockCorrelation: 0,
+        collectionVolume: volume.foreCollectionVolume,
+        dispersionRatio: calcPercent(volume.foreCollectionVolume,cumulativeStockData.cumulativeForeMount + cumulativeStockData.maxForeMount - cumulativeStockData.minForeMount),
+        stockMomentum: calcPercent(volume.foreCollectionVolume, sumTotalCollectionVolume),
+      },
+      투신_일반 : {
+        ...defaultInfo,
+        tradingVolume: item.__EMPTY_1,
+        stockCorrelation: 0,
+        collectionVolume: volume.gTrustCollectionVolume,
+        dispersionRatio: calcPercent(volume.gTrustCollectionVolume, cumulativeStockData.cumulativeGTrustMount + cumulativeStockData.maxGTrustMount - cumulativeStockData.minGTrustMount),
+        stockMomentum: calcPercent(volume.gTrustCollectionVolume, sumTotalCollectionVolume),
+      },
+      투신_사모 : {
+        ...defaultInfo,
+        tradingVolume: item.__EMPTY_2,
+        stockCorrelation: 0,
+        collectionVolume: volume.sTrustCollectionVolume,
+        dispersionRatio: calcPercent(volume.sTrustCollectionVolume, cumulativeStockData.cumulativeSTrustMount + cumulativeStockData.maxSTrustMount - cumulativeStockData.minSTrustMount ),
+        stockMomentum: calcPercent(volume.sTrustCollectionVolume, sumTotalCollectionVolume),
+      },
+      은행 : {
+        ...defaultInfo,
+        tradingVolume: item.__EMPTY_3,
+        stockCorrelation: 0,
+        collectionVolume: volume.bankCollectionVolume,
+        dispersionRatio: calcPercent( volume.bankCollectionVolume, cumulativeStockData.cumulativeBankMount + cumulativeStockData.maxBankMount - cumulativeStockData.minBankMount),
+        stockMomentum: calcPercent(volume.bankCollectionVolume, sumTotalCollectionVolume),
+      },
+      보험 : {
+        ...defaultInfo,
+        tradingVolume: item.__EMPTY_4,
+        stockCorrelation: 0,
+        collectionVolume: volume.insurCollectionVolume,
+        dispersionRatio: calcPercent(volume.insurCollectionVolume, cumulativeStockData.cumulativeInsurMount + cumulativeStockData.maxInsurMount - cumulativeStockData.minInsurMount),
+        stockMomentum: calcPercent(volume.insurCollectionVolume, sumTotalCollectionVolume),
+      },
+      기타금융 : {
+        ...defaultInfo,
+        tradingVolume: item.__EMPTY_5,
+        stockCorrelation: 0,
+        collectionVolume: volume.etcFinCollectionVolume,
+        dispersionRatio: calcPercent( volume.etcFinCollectionVolume, cumulativeStockData.cumulativeEtcFinMount + cumulativeStockData.maxEtcFinMount - cumulativeStockData.minEtcFinMount),
+        stockMomentum: calcPercent(volume.etcFinCollectionVolume, sumTotalCollectionVolume),
+      },
+      연기금 : {
+        ...defaultInfo,
+        tradingVolume: item.__EMPTY_6,
+        stockCorrelation: 0,
+        collectionVolume: volume.pensCollectionVolume,
+        dispersionRatio: calcPercent(volume.pensCollectionVolume, cumulativeStockData.cumulativePensMount + cumulativeStockData.maxPensMount - cumulativeStockData.minPensMount),
+        stockMomentum: calcPercent(volume.pensCollectionVolume, sumTotalCollectionVolume),
+      },
+      국가매집 : {
+        ...defaultInfo,
+        tradingVolume: item.__EMPTY_7,
+        stockCorrelation: 0,
+        collectionVolume: volume.natCollectionVolume,
+        dispersionRatio: calcPercent(volume.natCollectionVolume, cumulativeStockData.cumulativeNatMount + cumulativeStockData.maxNatMount - cumulativeStockData.minNatMount),
+        stockMomentum: calcPercent(volume.natCollectionVolume, sumTotalCollectionVolume),
+      },
 
-    // const dayValue1: ChartData = {
-    //   주가 : {
-    //     ...defaultInfo,
-    //     tradingVolume: item.거래량
-    //   },
-    //   개인 : {
-    //     ...defaultInfo,
-    //     tradingVolume: item.개인,
-    //     stockCorrelation: 0,
-    //     collectionVolume: volume.indivCollectionVolume,
-    //     dispersionRatio: calcPercent(volume.indivCollectionVolume,cumulativeStockData.cumulativeIndivMount + cumulativeStockData.maxIndivMount - cumulativeStockData.minIndivMount),
-    //     stockMomentum: calcPercent(volume.indivCollectionVolume, sumTotalCollectionVolume),
-    //   },
-    //   세력합 : {
-    //     ...defaultInfo,
-    //     tradingVolume: item.외국인 + item.기관종합,
-    //     stockCorrelation: ,
-    //     collectionVolume: volume.totalForeAndInstCollectionVolume,
-    //     dispersionRatio: calcPercent(volume.totalForeAndInstCollectionVolume,cumulativeStockData.cumulativeTotalForeAndInstMount + cumulativeStockData.maxTotalForeAndInstMount - cumulativeStockData.minTotalForeAndInstMount),
-    //     stockMomentum: calcPercent(volume.totalForeAndInstCollectionVolume, sumTotalCollectionVolume),
-    //   },
-    //   외국인 : {
-    //     ...defaultInfo,
-    //     tradingVolume: item.외국인,
-    //     stockCorrelation: ,
-    //     collectionVolume: volume.foreCollectionVolume,
-    //     dispersionRatio: calcPercent(volume.foreCollectionVolume,cumulativeStockData.cumulativeForeMount + cumulativeStockData.maxForeMount - cumulativeStockData.minForeMount),
-    //     stockMomentum: calcPercent(volume.foreCollectionVolume, sumTotalCollectionVolume),
-    //   },
-    //   투신_일반 : {
-    //     ...defaultInfo,
-    //     tradingVolume: item.__EMPTY_1,
-    //     stockCorrelation: ,
-    //     collectionVolume: volume.gTrustCollectionVolume,
-    //     dispersionRatio: calcPercent(volume.gTrustCollectionVolume, cumulativeStockData.cumulativeGTrustMount + cumulativeStockData.maxGTrustMount - cumulativeStockData.minGTrustMount),
-    //     stockMomentum: calcPercent(volume.gTrustCollectionVolume, sumTotalCollectionVolume),
-    //   },
-    //   투신_사모 : {
-    //     ...defaultInfo,
-    //     tradingVolume: item.__EMPTY_2,
-    //     stockCorrelation: ,
-    //     collectionVolume: volume.sTrustCollectionVolume,
-    //     dispersionRatio: calcPercent(volume.sTrustCollectionVolume, cumulativeStockData.cumulativeSTrustMount + cumulativeStockData.maxSTrustMount - cumulativeStockData.minSTrustMount ),
-    //     stockMomentum: calcPercent(volume.sTrustCollectionVolume, sumTotalCollectionVolume),
-    //   },
-    //   은행 : {
-    //     ...defaultInfo,
-    //     tradingVolume: item.__EMPTY_3,
-    //     stockCorrelation: ,
-    //     collectionVolume: volume.bankCollectionVolume,
-    //     dispersionRatio: calcPercent( volume.bankCollectionVolume, cumulativeStockData.cumulativeBankMount + cumulativeStockData.maxBankMount - cumulativeStockData.minBankMount),
-    //     stockMomentum: calcPercent(volume.bankCollectionVolume, sumTotalCollectionVolume),
-    //   },
-    //   보험 : {
-    //     ...defaultInfo,
-    //     tradingVolume: item.__EMPTY_4,
-    //     stockCorrelation: ,
-    //     collectionVolume: volume.insurCollectionVolume,
-    //     dispersionRatio: calcPercent(volume.insurCollectionVolume, cumulativeStockData.cumulativeInsurMount + cumulativeStockData.maxInsurMount - cumulativeStockData.minInsurMount),
-    //     stockMomentum: calcPercent(volume.insurCollectionVolume, sumTotalCollectionVolume),
-    //   },
-    //   기타금융 : {
-    //     ...defaultInfo,
-    //     tradingVolume: item.__EMPTY_5,
-    //     stockCorrelation: ,
-    //     collectionVolume: volume.etcFinCollectionVolume,
-    //     dispersionRatio: calcPercent( volume.etcFinCollectionVolume, cumulativeStockData.cumulativeEtcFinMount + cumulativeStockData.maxEtcFinMount - cumulativeStockData.minEtcFinMount),
-    //     stockMomentum: calcPercent(volume.etcFinCollectionVolume, sumTotalCollectionVolume),
-    //   },
-    //   연기금 : {
-    //     ...defaultInfo,
-    //     tradingVolume: item.__EMPTY_6,
-    //     stockCorrelation: ,
-    //     collectionVolume: volume.pensCollectionVolume,
-    //     dispersionRatio: calcPercent(volume.pensCollectionVolume, cumulativeStockData.cumulativePensMount + cumulativeStockData.maxPensMount - cumulativeStockData.minPensMount),
-    //     stockMomentum: calcPercent(volume.pensCollectionVolume, sumTotalCollectionVolume),
-    //   },
-    //   국가매집 : {
-    //     ...defaultInfo,
-    //     tradingVolume: item.__EMPTY_7,
-    //     stockCorrelation: ,
-    //     collectionVolume: volume.natCollectionVolume,
-    //     dispersionRatio: calcPercent(volume.natCollectionVolume, cumulativeStockData.cumulativeNatMount + cumulativeStockData.maxNatMount - cumulativeStockData.minNatMount),
-    //     stockMomentum: calcPercent(volume.natCollectionVolume, sumTotalCollectionVolume),
-    //   },
-
-    //   기타법인 : {
-    //     ...defaultInfo,
-    //     tradingVolume: item.기타,
-    //     stockCorrelation: ,
-    //     collectionVolume: volume.etcCollectionVolume,
-    //     dispersionRatio: calcPercent(volume.etcCollectionVolume,cumulativeStockData.cumulativeEtcMount + cumulativeStockData.maxEtcMount - cumulativeStockData.minEtcMount),
-    //     stockMomentum: calcPercent(volume.etcCollectionVolume, sumTotalCollectionVolume),
-    //   }
-    // };
+      기타법인 : {
+        ...defaultInfo,
+        tradingVolume: item.기타,
+        stockCorrelation: 0,
+        collectionVolume: volume.etcCollectionVolume,
+        dispersionRatio: calcPercent(volume.etcCollectionVolume,cumulativeStockData.cumulativeEtcMount + cumulativeStockData.maxEtcMount - cumulativeStockData.minEtcMount),
+        stockMomentum: calcPercent(volume.etcCollectionVolume, sumTotalCollectionVolume),
+      }
+    };
 
     result.push(dayValue);
   });
@@ -369,7 +276,6 @@ export const stockDataBeforePeriodProcess = (data: originalExcelFile[]): baseDat
    */
   const stockListByPeriod = initStockListByPeriod;
   data.forEach((item) => {
-    if (!item.일자) return;
     if(day < 6 && stockListByPeriod?.week?.length < 5)  {
       stockListByPeriod?.week?.push(item);
     }
@@ -379,7 +285,8 @@ export const stockDataBeforePeriodProcess = (data: originalExcelFile[]): baseDat
       if(weekList.length < 5) {
         weekList.push(item);
       } else {
-        stockListByPeriod[`week${++week}`].push(item);
+        const nextweek = stockListByPeriod[`week${++week}`] || [];
+        nextweek.push(item);
       }
     }
 
@@ -388,7 +295,8 @@ export const stockDataBeforePeriodProcess = (data: originalExcelFile[]): baseDat
       if(monthList.length < 30) {
         monthList.push(item);
       } else {
-        stockListByPeriod[`month${++month}`].push(item);
+        const nextMonth = stockListByPeriod[`month${++month}`] || [];
+        nextMonth.push(item);
       }
     }
 
@@ -397,7 +305,8 @@ export const stockDataBeforePeriodProcess = (data: originalExcelFile[]): baseDat
       if(quarterList.length < 90) {
         quarterList.push(item);
       } else {
-        stockListByPeriod[`quarter${++quarter}`].push(item);
+        const nextQuarter = stockListByPeriod[`quarter${++quarter}`] || [];
+        nextQuarter.push(item);
       }
     }
     
@@ -405,7 +314,8 @@ export const stockDataBeforePeriodProcess = (data: originalExcelFile[]): baseDat
     if(yearList.length < 365){
       yearList.push(item);
     } else {
-      stockListByPeriod[`year${++year}`].push(item);
+      const nextYear = stockListByPeriod[`year${++year}`] || [];
+      nextYear.push(item);
     }
 
   })
@@ -413,14 +323,84 @@ export const stockDataBeforePeriodProcess = (data: originalExcelFile[]): baseDat
   return stockListByPeriod;
 }
 // 수급분석표 로직
-export const processingExcelDataForCummulativePeriod = (data : baseDataBeforeProcess["stockListByPeriod"]) => {
-  const keys = Object.keys(data ?? {});
+export const processingExcelDataForCummulativePeriod = (stockList : baseDataBeforeProcess["stockListByPeriod"]) : TableData[] => {
+  const result: TableData[] = [];
+  const keys = Object.keys(stockList ?? {});
   keys.forEach(key => {
-    
+    if(key === 'week') {
+      stockList[key].forEach(data => {
+        result.push({
+          tradeDateNm: data.일자,
+          avgMount: data.종가,
+          tradingVolume: data.거래량,
+
+          tradingVolumeIndiv: data.개인,
+          tradingVolumeTotalForeAndInst: data.외국인 + data.기관종합,
+          tradingVolumeFore: data.외국인,
+          tradingVolumeTotalIns: data.기관종합,
+          tradingVolumeFinInv: data.기관,
+          tradingVolumeEtc: data.기타,
+          tradingVolumeGTrust: data.__EMPTY_1,
+          tradingVolumeSTrust: data.__EMPTY_2,
+          tradingVolumeBank: data.__EMPTY_3,
+          tradingVolumeInsur: data.__EMPTY_4,
+          tradingVolumeEtcFin: data.__EMPTY_5,
+          tradingVolumePens: data.__EMPTY_6,
+          tradingVolumeNat: data.__EMPTY_7,
+        })
+      });
+    } else {
+      let cumulativeData = {
+        avgMount: 0,
+        tradingVolume: 0,
+
+        tradingVolumeIndiv: 0,
+        tradingVolumeTotalForeAndInst: 0,
+        tradingVolumeFore: 0,
+        tradingVolumeTotalIns: 0,
+        tradingVolumeFinInv: 0,
+        tradingVolumeEtc: 0,
+        tradingVolumeGTrust: 0,
+        tradingVolumeSTrust: 0,
+        tradingVolumeBank: 0,
+        tradingVolumeInsur: 0,
+        tradingVolumeEtcFin: 0,
+        tradingVolumePens: 0,
+        tradingVolumeNat: 0,
+      }
+      stockList[key].forEach((data: originalExcelFile, idx: number) => {
+        cumulativeData.avgMount += data.종가;
+        cumulativeData.tradingVolume += data.거래량;
+
+        cumulativeData.tradingVolumeIndiv += data.개인;
+        cumulativeData.tradingVolumeTotalForeAndInst += data.외국인 + data.기관종합;
+        cumulativeData.tradingVolumeFore += data.외국인;
+        cumulativeData.tradingVolumeTotalIns += data.기관종합;
+        cumulativeData.tradingVolumeFinInv += data.기관;
+        cumulativeData.tradingVolumeEtc += data.기타;
+        cumulativeData.tradingVolumeGTrust += data.__EMPTY_1;
+        cumulativeData.tradingVolumeSTrust += data.__EMPTY_2;
+        cumulativeData.tradingVolumeBank += data.__EMPTY_3;
+        cumulativeData.tradingVolumeInsur += data.__EMPTY_4;
+        cumulativeData.tradingVolumeEtcFin += data.__EMPTY_5;
+        cumulativeData.tradingVolumePens += data.__EMPTY_6;
+        cumulativeData.tradingVolumeNat += data.__EMPTY_7;
+        
+        if(idx + 1 === stockList[key].length) {
+          result.push({
+            tradeDateNm: data.일자,
+            avgMount: Math.floor(cumulativeData.avgMount / idx + 1),
+            ...cumulativeData
+          });
+        }
+      })
+    }
   })
+
+  return result;
 };
 
-const calcPercent = (num1: number, num2: number) => Math.round((num1 / num2) * 100);
+const calcPercent = (num1: number, num2: number) => Math.round((num1 / num2) * 100) || 0;
 const toCamel = (str: string) => str[0].toLowerCase() + str.slice(1);
 
 

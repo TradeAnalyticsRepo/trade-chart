@@ -1,0 +1,132 @@
+{
+  "주가": {
+    "tradeDate": "2020/10/29",
+    "open": 21650,
+    "close": 21600,
+    "previousDayComparison": 50,
+    "high": 0,
+    "low": 0,
+    "tradingVolume": 108655
+  },
+  "개인": {
+    "tradeDate": "2020/10/29",
+    "open": 21650,
+    "close": 21600,
+    "previousDayComparison": 50,
+    "tradingVolume": -238,
+    "stockCorrelation": 0,
+    "collectionVolume": 790744,
+    "dispersionRatio": 27,
+    "stockMomentum": 54
+  },
+  "세력합": {
+    "tradeDate": "2020/10/29",
+    "open": 21650,
+    "close": 21600,
+    "previousDayComparison": 50,
+    "tradingVolume": 238,
+    "stockCorrelation": 0,
+    "collectionVolume": 2111416,
+    "dispersionRatio": 51,
+    "stockMomentum": 39
+  },
+  "외국인": {
+    "tradeDate": "2020/10/29",
+    "open": 21650,
+    "close": 21600,
+    "previousDayComparison": 50,
+    "tradingVolume": -1318,
+    "stockCorrelation": 0,
+    "collectionVolume": 588558,
+    "dispersionRatio": 31,
+    "stockMomentum": 11
+  },
+  "투신_일반": {
+    "tradeDate": "2020/10/29",
+    "open": 21650,
+    "close": 21600,
+    "previousDayComparison": 50,
+    "tradingVolume": -6935,
+    "stockCorrelation": 0,
+    "collectionVolume": 397628,
+    "dispersionRatio": 96,
+    "stockMomentum": 7
+  },
+  "투신_사모": {
+    "tradeDate": "2020/10/29",
+    "open": 21650,
+    "close": 21600,
+    "previousDayComparison": 50,
+    "tradingVolume": 700,
+    "stockCorrelation": 0,
+    "collectionVolume": 141745,
+    "dispersionRatio": 29,
+    "stockMomentum": 3
+  },
+  "은행": {
+    "tradeDate": "2020/10/29",
+    "open": 21650,
+    "close": 21600,
+    "previousDayComparison": 50,
+    "tradingVolume": 0,
+    "stockCorrelation": 0,
+    "collectionVolume": 11297,
+    "dispersionRatio": 27,
+    "stockMomentum": 0
+  },
+  "보험": {
+    "tradeDate": "2020/10/29",
+    "open": 21650,
+    "close": 21600,
+    "previousDayComparison": 50,
+    "tradingVolume": -981,
+    "stockCorrelation": 0,
+    "collectionVolume": 97654,
+    "dispersionRatio": 44,
+    "stockMomentum": 2
+  },
+  "기타금융": {
+    "tradeDate": "2020/10/29",
+    "open": 21650,
+    "close": 21600,
+    "previousDayComparison": 50,
+    "tradingVolume": 0,
+    "stockCorrelation": 0,
+    "collectionVolume": 487,
+    "dispersionRatio": 3,
+    "stockMomentum": 0
+  },
+  "연기금": {
+    "tradeDate": "2020/10/29",
+    "open": 21650,
+    "close": 21600,
+    "previousDayComparison": 50,
+    "tradingVolume": 816,
+    "stockCorrelation": 0,
+    "collectionVolume": 891836,
+    "dispersionRatio": 50,
+    "stockMomentum": 17
+  },
+  "국가매집": {
+    "tradeDate": "2020/10/29",
+    "open": 21650,
+    "close": 21600,
+    "previousDayComparison": 50,
+    "tradingVolume": 0,
+    "stockCorrelation": 0,
+    "collectionVolume": 0,
+    "dispersionRatio": 0,
+    "stockMomentum": 0
+  },
+  "기타법인": {
+    "tradeDate": "2020/10/29",
+    "open": 21650,
+    "close": 21600,
+    "previousDayComparison": 50,
+    "tradingVolume": 0,
+    "stockCorrelation": 0,
+    "collectionVolume": 26752,
+    "dispersionRatio": 23,
+    "stockMomentum": 0
+  }
+}

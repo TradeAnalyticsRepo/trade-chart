@@ -22,10 +22,12 @@ export interface ExcelData__ {
 export interface ChartData {
   주가: {
     tradeDate: string;
+    previousDayComparison: string;
     open: number;
     close: number;
     high: number;
     low: number;
+    tradingVolume: number;
   };
   개인: ExcelData__;
   세력합: ExcelData__;
@@ -44,6 +46,7 @@ export interface ChartData {
 export interface TableData {
   tradeDateNm: string;
   avgMount: number;
+  tradingVolume: number;
 
   tradingVolumeIndiv: number;
   tradingVolumeTotalForeAndInst: number;
